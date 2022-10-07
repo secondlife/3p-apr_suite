@@ -97,6 +97,7 @@ case "$AUTOBUILD_PLATFORM" in
     popd
 
     pushd "$TOP_DIR/apr-util"
+    autoreconf -f
     CC="clang" CFLAGS="$opts" CXXFLAGS="$opts" LDFLAGS="$opts" \
         ./configure --prefix="$PREFIX" --with-apr="$PREFIX" \
         --with-expat="$PREFIX"
@@ -173,15 +174,6 @@ case "$AUTOBUILD_PLATFORM" in
            do echo -change "$f" "@executable_path/../Resources/$(basename "$f")"; \
            done) ) \
         "$lib"
-
-    CONFIG_FILE="$build_secrets_checkout/code-signing-osx/config.sh"
-    if [ -f "$CONFIG_FILE" ]; then
-        source $CONFIG_FILE
-        codesign --force --timestamp --sign "$APPLE_SIGNATURE" "$PREFIX/lib/release/libapr-1.0.dylib"
-        codesign --force --timestamp --sign "$APPLE_SIGNATURE" "$PREFIX/lib/release/libaprutil-1.0.dylib"
-    else 
-        echo "No config file found; skipping codesign."
-    fi
   ;;
 
   linux*)

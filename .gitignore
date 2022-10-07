@@ -21,3 +21,4 @@ apr/LibR
 apr/Release
 apr-util/xml/expat/lib/LibD
 apr-util/xml/expat/lib/LibR
+config.log

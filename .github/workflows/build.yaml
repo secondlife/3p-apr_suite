@@ -11,9 +11,14 @@ jobs:
             addrsize: "32"
     runs-on: ${{ matrix.os }}
     steps:
+      - name: Install macOS dependencies
+        if: runner.os == 'macOS'
+        run: brew install automake
+
       - uses: secondlife/action-autobuild@v3
         with:
           addrsize: ${{ matrix.addrsize }}
+
   release:
     needs: build
     runs-on: [ubuntu-latest]
