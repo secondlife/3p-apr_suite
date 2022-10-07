@@ -89,6 +89,7 @@ case "$AUTOBUILD_PLATFORM" in
     opts="-arch $AUTOBUILD_CONFIGURE_ARCH $LL_BUILD_RELEASE"
 
     pushd "$TOP_DIR/apr"
+    rm configure
     autoreconf -fi
     CC="clang" CFLAGS="$opts" CXXFLAGS="$opts" LDFLAGS="$opts" \
         ./configure --prefix="$PREFIX"
@@ -97,6 +98,7 @@ case "$AUTOBUILD_PLATFORM" in
     popd
 
     pushd "$TOP_DIR/apr-util"
+    rm configure
     autoreconf -fi
     CC="clang" CFLAGS="$opts" CXXFLAGS="$opts" LDFLAGS="$opts" \
         ./configure --prefix="$PREFIX" --with-apr="$PREFIX" \
