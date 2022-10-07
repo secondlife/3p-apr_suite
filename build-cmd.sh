@@ -48,6 +48,7 @@ case "$AUTOBUILD_PLATFORM" in
 
     for proj in apr aprutil apriconv xml libapr libaprutil libapriconv; do
       msbuild.exe \
+        "$(cygpath -w apr-util/aprutil.sln)" \
         -t:$proj \
         -p:Configuration=Release \
         -p:Platform=$AUTOBUILD_WIN_VSPLATFORM \
