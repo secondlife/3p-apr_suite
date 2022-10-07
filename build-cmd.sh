@@ -96,6 +96,7 @@ case "$AUTOBUILD_PLATFORM" in
     popd
 
     pushd "$TOP_DIR/apr-util"
+    autoreconf -f -i
     CC="clang" CFLAGS="$opts" CXXFLAGS="$opts" LDFLAGS="$opts" \
         ./configure --prefix="$PREFIX" --with-apr="$PREFIX" \
         --with-expat="$PREFIX"
