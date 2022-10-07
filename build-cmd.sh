@@ -46,7 +46,7 @@ case "$AUTOBUILD_PLATFORM" in
 
     which nmake
 
-    for proj in apr aprutil apriconv xml libapr libaprutil libapriconv
+    for proj in apr aprutil apriconv xml libapr libaprutil libapriconv; do
       msbuild.exe \
         -t:$proj \
         -p:Configuration=Release \
