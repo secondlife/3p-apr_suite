@@ -13,7 +13,10 @@ jobs:
     steps:
       - name: Install macOS dependencies
         if: runner.os == 'macOS'
-        run: brew install automake
+        run: |
+          brew install \
+            automake \
+            libtool
 
       - uses: secondlife/action-autobuild@v3
         with:
