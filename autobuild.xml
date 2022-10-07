@@ -34,9 +34,11 @@
             <key>archive</key>
             <map>
               <key>hash</key>
-              <string>f4e80e0dfcab713a3da90cd8f7f23e7b</string>
+              <string>97ff809e91320139c8b2f095b34ec526a2390bf9</string>
+              <key>hash_algorithm</key>
+              <string>sha1</string>
               <key>url</key>
-              <string>https://automated-builds-secondlife-com.s3.amazonaws.com/ct2/76341/727265/expat-2.1.1.555519-darwin64-555519.tar.bz2</string>
+              <string>https://github.com/secondlife/3p-expat/releases/download/v2.1.1/expat-2.1.1.71e5d8b-darwin64-71e5d8b.tar.zst</string>
             </map>
             <key>name</key>
             <string>darwin64</string>
@@ -58,9 +60,11 @@
             <key>archive</key>
             <map>
               <key>hash</key>
-              <string>5e1f025d1cebd12db542080aa755257f</string>
+              <string>b661a2fcddc3e27779d1ac4f3e2cd7a831c954e2</string>
+              <key>hash_algorithm</key>
+              <string>sha1</string>
               <key>url</key>
-              <string>http://automated-builds-secondlife-com.s3.amazonaws.com/ct2/380/943/expat-2.1.1.500375-linux64-500375.tar.bz2</string>
+              <string>https://github.com/secondlife/3p-expat/releases/download/v2.1.1/expat-2.1.1.71e5d8b-linux64-71e5d8b.tar.zst</string>
             </map>
             <key>name</key>
             <string>linux64</string>
@@ -70,9 +74,11 @@
             <key>archive</key>
             <map>
               <key>hash</key>
-              <string>cd4fe03473076c324d80ae3bd91a85bb</string>
+              <string>03efdf67b42bf4caf249b56bfd902d574cac63df</string>
+              <key>hash_algorithm</key>
+              <string>sha1</string>
               <key>url</key>
-              <string>https://automated-builds-secondlife-com.s3.amazonaws.com/ct2/76343/727273/expat-2.1.1.555519-windows-555519.tar.bz2</string>
+              <string>https://github.com/secondlife/3p-expat/releases/download/v2.1.1/expat-2.1.1.71e5d8b-windows-71e5d8b.tar.zst</string>
             </map>
             <key>name</key>
             <string>windows</string>
@@ -82,16 +88,18 @@
             <key>archive</key>
             <map>
               <key>hash</key>
-              <string>d2d74d73b914150982b1883a3b96e60b</string>
+              <string>8270ac8b2687f5978520d07e81ed91b86d1412d4</string>
+              <key>hash_algorithm</key>
+              <string>sha1</string>
               <key>url</key>
-              <string>https://automated-builds-secondlife-com.s3.amazonaws.com/ct2/76344/727279/expat-2.1.1.555519-windows64-555519.tar.bz2</string>
+              <string>https://github.com/secondlife/3p-expat/releases/download/v2.1.1/expat-2.1.1.71e5d8b-windows64-71e5d8b.tar.zst</string>
             </map>
             <key>name</key>
             <string>windows64</string>
           </map>
         </map>
         <key>version</key>
-        <string>2.1.1.555519</string>
+        <string>2.1.1.71e5d8b</string>
       </map>
     </map>
     <key>package_description</key>
