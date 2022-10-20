@@ -7,12 +7,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "apr", "..\apr\apr.vcxproj",
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "aprapp", "..\apr\build\aprapp.vcxproj", "{AD318440-A041-C4AB-FE77-601F9D54B484}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "apr_dbd_freetds", "dbd\apr_dbd_freetds.vcxproj", "{8AC1BF56-DAEE-23F7-37FD-4C5E4620A2DD}"
-	ProjectSection(ProjectDependencies) = postProject
-		{0B76F2AE-FB7A-2628-A42E-8F9A84B07949} = {0B76F2AE-FB7A-2628-A42E-8F9A84B07949}
-		{D4A966E1-0709-CC62-E24F-5C020BC0B41D} = {D4A966E1-0709-CC62-E24F-5C020BC0B41D}
-	EndProjectSection
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "apr_dbd_mysql", "dbd\apr_dbd_mysql.vcxproj", "{A58F15D6-6AD2-5D4E-6943-30A4D5E170A3}"
 	ProjectSection(ProjectDependencies) = postProject
 		{0B76F2AE-FB7A-2628-A42E-8F9A84B07949} = {0B76F2AE-FB7A-2628-A42E-8F9A84B07949}

@@ -111,9 +111,6 @@
     <ClCompile Include="dbd\apr_dbd.c">
       <Filter>Source Files\dbd</Filter>
     </ClCompile>
-    <ClCompile Include="dbd\apr_dbd_freetds.c">
-      <Filter>Source Files\dbd</Filter>
-    </ClCompile>
     <ClCompile Include="dbd\apr_dbd_mysql.c">
       <Filter>Source Files\dbd</Filter>
     </ClCompile>
