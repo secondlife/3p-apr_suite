@@ -7,8 +7,6 @@ set -e
 # complain about unset env variables
 set -u
 
-APR_INCLUDE_DIR="apr/include"
-
 if [ -z "$AUTOBUILD" ] ; then
     exit 1
 fi
@@ -28,11 +26,11 @@ source_environment_tempfile="$STAGING_DIR/source_environment.sh"
 . "$source_environment_tempfile"
 
 # extract APR version into VERSION.txt
-APR_INCLUDE_DIR="../apr/include"
+APR_BASE_INCLUDE_DIR="../apr/include"
 # will match -- #<whitespace>define<whitespace>APR_MAJOR_VERSION<whitespace>number  future proofed :)
-major_version="$(sed -n -E 's/#[[:space:]]*define[[:space:]]+APR_MAJOR_VERSION[[:space:]]+([0-9]+)/\1/p' "${APR_INCLUDE_DIR}/apr_version.h")"
-minor_version="$(sed -n -E 's/#[[:space:]]*define[[:space:]]+APR_MINOR_VERSION[[:space:]]+([0-9]+)/\1/p' "${APR_INCLUDE_DIR}/apr_version.h")"
-patch_version="$(sed -n -E 's/#[[:space:]]*define[[:space:]]+APR_PATCH_VERSION[[:space:]]+([0-9]+)/\1/p' "${APR_INCLUDE_DIR}/apr_version.h")"
+major_version="$(sed -n -E 's/#[[:space:]]*define[[:space:]]+APR_MAJOR_VERSION[[:space:]]+([0-9]+)/\1/p' "${APR_BASE_INCLUDE_DIR}/apr_version.h")"
+minor_version="$(sed -n -E 's/#[[:space:]]*define[[:space:]]+APR_MINOR_VERSION[[:space:]]+([0-9]+)/\1/p' "${APR_BASE_INCLUDE_DIR}/apr_version.h")"
+patch_version="$(sed -n -E 's/#[[:space:]]*define[[:space:]]+APR_PATCH_VERSION[[:space:]]+([0-9]+)/\1/p' "${APR_BASE_INCLUDE_DIR}/apr_version.h")"
 version="${major_version}.${minor_version}.${patch_version}"
 build=${AUTOBUILD_BUILD_ID:=0}
 echo "${version}.${build}" > "${STAGING_DIR}/VERSION.txt"
@@ -72,11 +70,53 @@ if not any(frag in d for frag in ('CommonExtensions', 'VSPerfCollectionTools', '
     cygpath -p -m "$PATH" | tr ';' '\n'
     python -c "print(' ${#PATH} chars in PATH '.center(72, '='))"
 
-    which nmake
+    EXPAT_LIBRARYS="$STAGING_DIR/packages/lib/release"
+    EXPAT_INCLUDE_DIRS="$STAGING_DIR/packages/include/expat"
 
-    for proj in apr aprutil apriconv xml libapr  libaprutil libapriconv
-      do build_sln "apr-util/aprutil.sln" "Release|$AUTOBUILD_WIN_VSPLATFORM" "$proj"
-    done
+    pushd "apr"
+        cmake . -G "$AUTOBUILD_WIN_CMAKE_GEN" \
+                -DCMAKE_INSTALL_PREFIX=$STAGING_DIR \
+                -DCMAKE_C_FLAGS="$LL_BUILD_RELEASE"
+        #for proj in apr-1 aprapp-1 libapr-1 libaprapr-1
+        #  do build_sln "apr.sln" "Release|$AUTOBUILD_WIN_VSPLATFORM" "$proj"
+        #done
+        build_sln "apr.sln" "Release|$AUTOBUILD_WIN_VSPLATFORM" "ALL_BUILD"
+    popd
+
+    # will look for header in "${CMAKE_INSTALL_PREFIX}/include" 
+    # will look for libs in "${CMAKE_INSTALL_PREFIX}/lib" 
+    # Generated .h files are stored in PROJECT_BINARY_DIR !!!
+    pushd "apr-util"
+        APR_LIBRARIES="$TOP_DIR/apr/release"
+        APR_PREFIX_LIBRARIES="$TOP_DIR/apr/lib"
+        mkdir -p "$APR_PREFIX_LIBRARIES"
+        cp "$APR_LIBRARIES/apr-1.lib" "$APR_PREFIX_LIBRARIES"
+        cp "$APR_LIBRARIES/aprapp-1.lib" "$APR_PREFIX_LIBRARIES"
+        cp "$APR_LIBRARIES/libapr-1.lib" "$APR_PREFIX_LIBRARIES"
+        cp "$APR_LIBRARIES/libaprapp-1.lib" "$APR_PREFIX_LIBRARIES"
+        cp  $TOP_DIR/apr/*.h "$TOP_DIR/apr/include"
+
+        APR_EXPAT_DIR="$TOP_DIR/apr-util/xml/expat"
+        cp "$STAGING_DIR/packages/include/expat/expat.h" "$APR_EXPAT_DIR"
+        cp "$STAGING_DIR/packages/include/expat/expat_external.h" "$APR_EXPAT_DIR"
+        # It's perfectly fine finding $EXPAT_LIBRARYS/libexpatMT.lib, but not opening it for some reason
+        # And when it does work cmake wants libexpatMT.lib, but in such case VS wants libexpatMT.lib.lib
+        cp "$EXPAT_LIBRARYS/libexpatMT.lib" "$APR_EXPAT_DIR"
+        cp -i "$APR_EXPAT_DIR/libexpatMT.lib" "$APR_EXPAT_DIR/libexpatMT"
+
+        cmake . -G "$AUTOBUILD_WIN_CMAKE_GEN" \
+                -DCMAKE_INSTALL_PREFIX="$TOP_DIR/apr" \
+                -DEXPAT_INCLUDE_DIR:PATH="$APR_EXPAT_DIR" \
+                -DEXPAT_LIBRARY:FILEPATH="$APR_EXPAT_DIR/libexpatMT" \
+                -DCMAKE_C_FLAGS="$LL_BUILD_RELEASE"
+
+        #for proj in libaprutil-1 apr_dbd_odbc-1 aprutil-1 apr_ldap-1
+        #  do build_sln "apr-util.sln" "Release|$AUTOBUILD_WIN_VSPLATFORM" "$proj"
+        #done
+        build_sln "apr-util.sln" "Release|$AUTOBUILD_WIN_VSPLATFORM" "ALL_BUILD"
+    popd
+
+    #build_sln "apr-iconv/apriconv.sln" "Release|$AUTOBUILD_WIN_VSPLATFORM" "apriconv"
 
     mkdir -p "$RELEASE_OUT_DIR" || echo "$RELEASE_OUT_DIR exists"
 
@@ -86,12 +126,14 @@ if not any(frag in d for frag in ('CommonExtensions', 'VSPerfCollectionTools', '
       else
         bitdir="/x64"
     fi
-    cp "apr$bitdir/LibR/apr-1.lib" "$RELEASE_OUT_DIR"
-    cp "apr-util$bitdir/LibR/aprutil-1.lib" "$RELEASE_OUT_DIR"
-    cp "apr-iconv$bitdir/LibR/apriconv-1.lib" "$RELEASE_OUT_DIR"
-    cp "apr$bitdir/Release/libapr-1."{lib,dll} "$RELEASE_OUT_DIR"
-    cp "apr-iconv$bitdir/Release/libapriconv-1."{lib,dll} "$RELEASE_OUT_DIR"
-    cp "apr-util$bitdir/Release/libaprutil-1."{lib,dll} "$RELEASE_OUT_DIR"
+    cp "apr/Release/apr-1.lib" "$RELEASE_OUT_DIR"
+    cp "apr/Release/libapr-1."{lib,dll} "$RELEASE_OUT_DIR"
+
+    APR_UTIL_LIBRARIES="$TOP_DIR/apr-util/release"
+    cp "apr-util/Release/aprutil-1.lib" "$RELEASE_OUT_DIR"
+    cp "apr-util/Release/libaprutil-1."{lib,dll} "$RELEASE_OUT_DIR"
+    #cp "apr-iconv$bitdir/LibR/apriconv-1.lib" "$RELEASE_OUT_DIR"
+    #cp "apr-iconv$bitdir/Release/libapriconv-1."{lib,dll} "$RELEASE_OUT_DIR"
 
     INCLUDE_DIR="$STAGING_DIR/include/apr-1"
     mkdir -p "$INCLUDE_DIR"      || echo "$INCLUDE_DIR exists"

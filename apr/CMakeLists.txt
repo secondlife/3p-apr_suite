@@ -124,6 +124,7 @@ SET(APR_PUBLIC_HEADERS_STATIC
   include/apr_user.h
   include/apr_version.h
   include/apr_want.h
+  include/arch/win32/apr_log.h
 )
 SET(APR_PUBLIC_HEADERS_GENERATED
   ${PROJECT_BINARY_DIR}/apr.h
@@ -162,6 +163,7 @@ SET(APR_SOURCES
   misc/win32/charset.c
   misc/win32/env.c
   misc/win32/internal.c
+  misc/win32/log.c
   misc/win32/misc.c
   misc/win32/rand.c
   misc/win32/start.c
