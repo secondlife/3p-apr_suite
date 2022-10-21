@@ -1,6 +1,0 @@
-﻿D:\LindenLabs\code\3p-apr_suite\apr-util\xml\expat\lib\xml.vcxproj(90,5): warning MSB4011: "C:\Users\Andrey\AppData\Local\Microsoft\MSBuild\v4.0\Microsoft.Cpp.Win32.user.props" cannot be imported again. It was already imported at "D:\LindenLabs\code\3p-apr_suite\apr-util\xml\expat\lib\xml.vcxproj (83,5)". This is most likely a build authoring error. This subsequent import will be ignored. 
-  xmlparse.c
-  xmlrole.c
-  xmltok.c
-  Generating Code...
-  xml.vcxproj -> D:\LindenLabs\code\3p-apr_suite\apr-util\xml\expat\lib\.\LibD\xml.lib
