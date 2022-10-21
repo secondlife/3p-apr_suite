@@ -81,11 +81,13 @@ if not any(frag in d for frag in ('CommonExtensions', 'VSPerfCollectionTools', '
         #  do build_sln "apr.sln" "Release|$AUTOBUILD_WIN_VSPLATFORM" "$proj"
         #done
         build_sln "apr.sln" "Release|$AUTOBUILD_WIN_VSPLATFORM" "ALL_BUILD"
+
+        # Generated .h files are stored in PROJECT_BINARY_DIR !!!
+        cp *.h "include"
     popd
 
     # will look for header in "${CMAKE_INSTALL_PREFIX}/include" 
     # will look for libs in "${CMAKE_INSTALL_PREFIX}/lib" 
-    # Generated .h files are stored in PROJECT_BINARY_DIR !!!
     pushd "apr-util"
         APR_LIBRARIES="$TOP_DIR/apr/release"
         APR_PREFIX_LIBRARIES="$TOP_DIR/apr/lib"
@@ -94,7 +96,6 @@ if not any(frag in d for frag in ('CommonExtensions', 'VSPerfCollectionTools', '
         cp "$APR_LIBRARIES/aprapp-1.lib" "$APR_PREFIX_LIBRARIES"
         cp "$APR_LIBRARIES/libapr-1.lib" "$APR_PREFIX_LIBRARIES"
         cp "$APR_LIBRARIES/libaprapp-1.lib" "$APR_PREFIX_LIBRARIES"
-        cp  $TOP_DIR/apr/*.h "$TOP_DIR/apr/include"
 
         APR_EXPAT_DIR="$TOP_DIR/apr-util/xml/expat"
         cp "$STAGING_DIR/packages/include/expat/expat.h" "$APR_EXPAT_DIR"
@@ -102,7 +103,7 @@ if not any(frag in d for frag in ('CommonExtensions', 'VSPerfCollectionTools', '
         # It's perfectly fine finding $EXPAT_LIBRARYS/libexpatMT.lib, but not opening it for some reason
         # And when it does work cmake wants libexpatMT.lib, but in such case VS wants libexpatMT.lib.lib
         cp "$EXPAT_LIBRARYS/libexpatMT.lib" "$APR_EXPAT_DIR"
-        cp -i "$APR_EXPAT_DIR/libexpatMT.lib" "$APR_EXPAT_DIR/libexpatMT"
+        cp "$APR_EXPAT_DIR/libexpatMT.lib" "$APR_EXPAT_DIR/libexpatMT"
 
         cmake . -G "$AUTOBUILD_WIN_CMAKE_GEN" \
                 -DCMAKE_INSTALL_PREFIX="$TOP_DIR/apr" \
@@ -114,9 +115,18 @@ if not any(frag in d for frag in ('CommonExtensions', 'VSPerfCollectionTools', '
         #  do build_sln "apr-util.sln" "Release|$AUTOBUILD_WIN_VSPLATFORM" "$proj"
         #done
         build_sln "apr-util.sln" "Release|$AUTOBUILD_WIN_VSPLATFORM" "ALL_BUILD"
+
+        cp *.h "include"
     popd
 
-    #build_sln "apr-iconv/apriconv.sln" "Release|$AUTOBUILD_WIN_VSPLATFORM" "apriconv"
+    if [ "$AUTOBUILD_ADDRSIZE" = 32 ]
+      then
+       build_sln "apr-iconv\apriconv.vcxproj" "Release|x86" "apriconv"
+       build_sln "apr-iconv\libapriconv.vcxproj" "Release|x86" "libapriconv"
+      else
+       build_sln "apr-iconv\apriconv.vcxproj" "Release|$AUTOBUILD_WIN_VSPLATFORM" "apriconv"
+       build_sln "apr-iconv\libapriconv.vcxproj" "Release|$AUTOBUILD_WIN_VSPLATFORM" "libapriconv"
+    fi
 
     mkdir -p "$RELEASE_OUT_DIR" || echo "$RELEASE_OUT_DIR exists"
 
@@ -132,15 +142,14 @@ if not any(frag in d for frag in ('CommonExtensions', 'VSPerfCollectionTools', '
     APR_UTIL_LIBRARIES="$TOP_DIR/apr-util/release"
     cp "apr-util/Release/aprutil-1.lib" "$RELEASE_OUT_DIR"
     cp "apr-util/Release/libaprutil-1."{lib,dll} "$RELEASE_OUT_DIR"
-    #cp "apr-iconv$bitdir/LibR/apriconv-1.lib" "$RELEASE_OUT_DIR"
-    #cp "apr-iconv$bitdir/Release/libapriconv-1."{lib,dll} "$RELEASE_OUT_DIR"
+    cp "apr-iconv$bitdir/LibR/apriconv-1.lib" "$RELEASE_OUT_DIR"
+    cp "apr-iconv$bitdir/Release/libapriconv-1."{lib,dll} "$RELEASE_OUT_DIR"
 
     INCLUDE_DIR="$STAGING_DIR/include/apr-1"
     mkdir -p "$INCLUDE_DIR"      || echo "$INCLUDE_DIR exists"
     cp apr/include/*.h "$INCLUDE_DIR"
     cp apr-iconv/include/*.h "$INCLUDE_DIR"
     cp apr-util/include/*.h "$INCLUDE_DIR"
-    cp apr-util/*.h "$INCLUDE_DIR"
     mkdir "$INCLUDE_DIR/arch"    || echo "$INCLUDE_DIR/arch exists"
     cp apr/include/arch/apr_private_common.h "$INCLUDE_DIR/arch"
     cp -R "apr/include/arch/win32" "$INCLUDE_DIR/arch"
