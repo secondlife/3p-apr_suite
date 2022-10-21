@@ -140,6 +140,7 @@ if not any(frag in d for frag in ('CommonExtensions', 'VSPerfCollectionTools', '
     cp apr/include/*.h "$INCLUDE_DIR"
     cp apr-iconv/include/*.h "$INCLUDE_DIR"
     cp apr-util/include/*.h "$INCLUDE_DIR"
+    cp apr-util/*.h "$INCLUDE_DIR"
     mkdir "$INCLUDE_DIR/arch"    || echo "$INCLUDE_DIR/arch exists"
     cp apr/include/arch/apr_private_common.h "$INCLUDE_DIR/arch"
     cp -R "apr/include/arch/win32" "$INCLUDE_DIR/arch"
