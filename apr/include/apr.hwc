@@ -335,7 +335,7 @@ extern "C" {
 #define APR_HAS_SO_ACCEPTFILTER   0
 #define APR_HAS_UNICODE_FS        1
 #define APR_HAS_PROC_INVOKED      1
-#define APR_HAS_OS_UUID           1
+#define APR_HAS_OS_UUID           0
 #define APR_HAS_TIMEDLOCKS        1
 
 #ifndef _WIN32_WCE

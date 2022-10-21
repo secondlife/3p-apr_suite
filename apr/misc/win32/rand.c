@@ -62,8 +62,8 @@ APR_DECLARE(apr_status_t) apr_os_uuid_get(unsigned char *uuid_data)
      * Note that Win2000, XP and later no longer suffer from this problem,
      * a scrambling fix is only needed for (apr_os_level < APR_WIN_2000)
      */
-    if (FAILED(UuidCreate((UUID *)uuid_data))) {
+    //if (FAILED(UuidCreate((UUID *)uuid_data))) {
         return APR_EGENERAL;
-    }
-    return APR_SUCCESS;
+    //}
+    //return APR_SUCCESS;
 }
