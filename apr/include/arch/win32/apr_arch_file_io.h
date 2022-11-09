@@ -186,10 +186,9 @@ struct apr_file_t {
     apr_thread_mutex_t *mutex; /* mutex semaphore, must be owned to access
                                 * the above fields                          */
 
-#if APR_FILES_AS_SOCKETS
     /* if there is a timeout set, then this pollset is used */
     apr_pollset_t *pollset;
-#endif
+
     /* Pipe specific info */    
 };
 

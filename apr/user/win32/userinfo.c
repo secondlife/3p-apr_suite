@@ -98,7 +98,7 @@ APR_DECLARE(apr_status_t) apr_uid_homepath_get(char **dirname,
         apr_cpystrn(regkey + keylen, username, sizeof(regkey) - keylen);
     }
 
-    if ((rv = RegOpenKeyEx(HKEY_LOCAL_MACHINE, regkey, 0, 
+    if ((rv = RegOpenKeyExA(HKEY_LOCAL_MACHINE, regkey, 0, 
                            KEY_QUERY_VALUE, &key)) != ERROR_SUCCESS)
         return APR_FROM_OS_ERROR(rv);
 
@@ -224,14 +224,14 @@ APR_DECLARE(apr_status_t) apr_uid_get(apr_uid_t *uid, apr_gid_t *gid,
     }
     /* Get nothing on the first pass ... need to size the sid buffer 
      */
-    rv = LookupAccountName(domain, username, domain, &sidlen, 
+    rv = LookupAccountNameA(domain, username, domain, &sidlen, 
                            anydomain, &domlen, &sidtype);
     if (sidlen) {
         /* Give it back on the second pass
          */
         *uid = apr_palloc(p, sidlen);
         domlen = sizeof(anydomain);
-        rv = LookupAccountName(domain, username, *uid, &sidlen, 
+        rv = LookupAccountNameA(domain, username, *uid, &sidlen, 
                                anydomain, &domlen, &sidtype);
     }
     if (!sidlen || !rv) {
@@ -256,7 +256,7 @@ APR_DECLARE(apr_status_t) apr_uid_name_get(char **username, apr_uid_t userid,
     DWORD cbname = sizeof(name), cbdomain = sizeof(domain);
     if (!userid)
         return APR_EINVAL;
-    if (!LookupAccountSid(NULL, userid, name, &cbname, domain, &cbdomain, &type))
+    if (!LookupAccountSidA(NULL, userid, name, &cbname, domain, &cbdomain, &type))
         return apr_get_os_error();
     if (type != SidTypeUser && type != SidTypeAlias && type != SidTypeWellKnownGroup)
         return APR_EINVAL;

@@ -478,11 +478,10 @@ APR_DECLARE(apr_status_t) apr_file_open(apr_file_t **new, const char *fname,
         /* This feature is not supported on this platform. */
         (*new)->flags &= ~APR_FOPEN_SPARSE;
 
-#if APR_FILES_AS_SOCKETS
     /* Create a pollset with room for one descriptor. */
     /* ### check return codes */
     (void) apr_pollset_create(&(*new)->pollset, 1, pool, 0);
-#endif
+
     if (!(flag & APR_FOPEN_NOCLEANUP)) {
         apr_pool_cleanup_register((*new)->pool, (void *)(*new), file_cleanup,
                                   apr_pool_cleanup_null);
@@ -571,14 +570,14 @@ APR_DECLARE(apr_status_t) apr_file_rename(const char *frompath,
          */
         HANDLE handle = INVALID_HANDLE_VALUE;
 
-        if ((handle = CreateFile(topath, GENERIC_WRITE, 0, 0,  
+        if ((handle = CreateFileA(topath, GENERIC_WRITE, 0, 0,  
             OPEN_EXISTING, 0, 0 )) != INVALID_HANDLE_VALUE )
         {
             CloseHandle(handle);
-            if (!DeleteFile(topath))
+            if (!DeleteFileA(topath))
                 return apr_get_os_error();
         }
-        if (MoveFile(frompath, topath))
+        if (MoveFileA(frompath, topath))
             return APR_SUCCESS;
     }        
 #endif
@@ -655,11 +654,10 @@ APR_DECLARE(apr_status_t) apr_os_file_put(apr_file_t **file,
         }
     }
 
-#if APR_FILES_AS_SOCKETS
     /* Create a pollset with room for one descriptor. */
     /* ### check return codes */
     (void) apr_pollset_create(&(*file)->pollset, 1, pool, 0);
-#endif
+
     /* Should we be testing if thefile is a handle to 
      * a PIPE and set up the mechanics appropriately?
      *
