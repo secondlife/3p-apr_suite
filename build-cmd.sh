@@ -185,6 +185,8 @@ case "$AUTOBUILD_PLATFORM" in
 
     # do release builds
     pushd "$TOP_DIR/apr"
+        rm configure
+        autoreconf -fi
         LDFLAGS="$opts" CFLAGS="$opts" CXXFLAGS="$opts" \
             ./configure --prefix="$PREFIX" --libdir="$PREFIX/lib/release"
         make
@@ -192,6 +194,8 @@ case "$AUTOBUILD_PLATFORM" in
     popd
 
     pushd "$TOP_DIR/apr-iconv"
+        rm configure
+        autoreconf -fi
         # NOTE: the autotools scripts in iconv don't honor the --libdir switch so we
         # need to build to a dummy prefix and copy the files into the correct place
         mkdir "$PREFIX/iconv"
@@ -209,6 +213,8 @@ case "$AUTOBUILD_PLATFORM" in
     popd
 
     pushd "$TOP_DIR/apr-util"
+        rm configure
+        autoreconf -fi
         # the autotools can't find the expat static lib with the layout of our
         # libraries so we need to copy the file to the correct location temporarily
         cp "$PREFIX/packages/lib/release/libexpat.a" "$PREFIX/packages/lib/"
