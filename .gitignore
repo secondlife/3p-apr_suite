@@ -2,6 +2,7 @@ syntax: glob
 stage/
 autobuild-parabuild-bootstrap/
 .*.swp
+*.exe
 .DS_Store
 apr-iconv/build/rules.mk
 apr-iconv/lib/apr_iconv_private.h

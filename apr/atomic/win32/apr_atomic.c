@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-#include "apr.h"
-#include "apr_atomic.h"
-#include "apr_thread_mutex.h"
+#include "apr_arch_atomic.h"
 
 APR_DECLARE(apr_status_t) apr_atomic_init(apr_pool_t *p)
 {
+#if defined (NEED_ATOMICS_GENERIC64)
+    return apr__atomic_generic64_init(p);
+#else
     return APR_SUCCESS;
+#endif
 }
 
 /* 
@@ -135,11 +137,8 @@ APR_DECLARE(void *) apr_atomic_casptr(volatile void **mem, void *with, const voi
    expand it explicitly. */
 #if (defined(WIN32) || defined(_M_IA64) || defined(_M_AMD64)) && !defined(RC_INVOKED)
     return InterlockedCompareExchangePointer((void* volatile*)mem, with, (void*)cmp);
-#elif defined(__MINGW32__)
-    return InterlockedCompareExchangePointer((void**)mem, with, (void*)cmp);
 #else
-    /* Too many VC6 users have stale win32 API files, stub this */
-    return ((apr_atomic_win32_ptr_ptr_ptr_fn)InterlockedCompareExchange)(mem, with, cmp);
+    return InterlockedCompareExchangePointer((void**)mem, with, (void*)cmp);
 #endif
 }
 
@@ -154,8 +153,4 @@ APR_DECLARE(void*) apr_atomic_xchgptr(volatile void **mem, void *with)
  * diverges from FORWARD; expand it explicitly. */
 #if (defined(WIN32) || defined(_M_IA64) || defined(_M_AMD64) || defined(__MINGW32__)) && !defined(RC_INVOKED)
     return InterlockedExchangePointer((void**)mem, with);
-#else
-    /* Too many VC6 users have stale win32 API files, stub this */
-    return ((apr_atomic_win32_ptr_ptr_fn)InterlockedExchange)(mem, with);
-#endif
 }
