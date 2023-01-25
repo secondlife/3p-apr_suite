@@ -189,7 +189,7 @@ case "$AUTOBUILD_PLATFORM" in
         autoreconf -fi
         LDFLAGS="$opts" CFLAGS="$opts" CXXFLAGS="$opts" \
             ./configure --prefix="$PREFIX" --libdir="$PREFIX/lib/release"
-        make
+        make || cat -n include/apr.h | sed -n '500,599p' && exit 1
         make install
     popd
 
