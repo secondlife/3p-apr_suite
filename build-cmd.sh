@@ -87,13 +87,15 @@ case "$AUTOBUILD_PLATFORM" in
     PREFIX="$STAGING_DIR"
 
     opts="-arch $AUTOBUILD_CONFIGURE_ARCH $LL_BUILD_RELEASE"
+    # per https://github.com/pyenv/pyenv/issues/1425
+    export SDKROOT="/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk"
 
     pushd "$TOP_DIR/apr"
     rm configure
     autoreconf -fi
-    CC="clang" CFLAGS="$opts" CXXFLAGS="$opts" LDFLAGS="$opts" \
+    CC="clang" CFLAGS="$opts -I$SDKROOT/usr/include" CXXFLAGS="$opts" LDFLAGS="$opts" \
         ./configure --prefix="$PREFIX"
-    make || cat -n include/apr.h | sed -n '500,599p' && exit 1
+    make
     make install
     popd
 
