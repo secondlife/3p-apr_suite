@@ -89,22 +89,25 @@ case "$AUTOBUILD_PLATFORM" in
     opts="-arch $AUTOBUILD_CONFIGURE_ARCH $LL_BUILD_RELEASE"
     # per https://github.com/pyenv/pyenv/issues/1425
     export SDKROOT="/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk"
+    export CC="clang"
+    export CFLAGS="$opts -I$SDKROOT/usr/include"
+    export CXXFLAGS="$opts"
+    export LDFLAGS="$opts"
 
     pushd "$TOP_DIR/apr"
-    rm configure
+    rm configure || echo "configure already gone"
     autoreconf -fi
-    CC="clang" CFLAGS="$opts -I$SDKROOT/usr/include" CXXFLAGS="$opts" LDFLAGS="$opts" \
-        ./configure --prefix="$PREFIX"
+    ./buildconf
+    ./configure --prefix="$PREFIX"
     make
     make install
     popd
 
     pushd "$TOP_DIR/apr-util"
-    rm configure
+    rm configure || echo "configure already gone"
     autoreconf -fi
-    CC="clang" CFLAGS="$opts" CXXFLAGS="$opts" LDFLAGS="$opts" \
-        ./configure --prefix="$PREFIX" --with-apr="$PREFIX" \
-        --with-expat="$PREFIX"
+    ./buildconf
+    ./configure --prefix="$PREFIX" --with-apr="$PREFIX" --with-expat="$PREFIX"
     make
     make install
     popd
@@ -187,7 +190,7 @@ case "$AUTOBUILD_PLATFORM" in
 
     # do release builds
     pushd "$TOP_DIR/apr"
-        rm configure
+        rm configure || echo "configure already gone"
         autoreconf -fi
         LDFLAGS="$opts" CFLAGS="$opts" CXXFLAGS="$opts" \
             ./configure --prefix="$PREFIX" --libdir="$PREFIX/lib/release"
@@ -196,7 +199,7 @@ case "$AUTOBUILD_PLATFORM" in
     popd
 
     pushd "$TOP_DIR/apr-iconv"
-        rm configure
+        rm configure || echo "configure already gone"
         autoreconf -fi
         # NOTE: the autotools scripts in iconv don't honor the --libdir switch so we
         # need to build to a dummy prefix and copy the files into the correct place
@@ -215,7 +218,7 @@ case "$AUTOBUILD_PLATFORM" in
     popd
 
     pushd "$TOP_DIR/apr-util"
-        rm configure
+        rm configure || echo "configure already gone"
         autoreconf -fi
         # the autotools can't find the expat static lib with the layout of our
         # libraries so we need to copy the file to the correct location temporarily
