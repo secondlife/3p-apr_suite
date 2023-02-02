@@ -86,12 +86,18 @@ if not any(frag in d for frag in ('CommonExtensions', 'VSPerfCollectionTools', '
       else
         bitdir="/x64"
     fi
-    cp "apr$bitdir/LibR/apr-1.lib" "$RELEASE_OUT_DIR"
-    cp "apr-util$bitdir/LibR/aprutil-1.lib" "$RELEASE_OUT_DIR"
-    cp "apr-iconv$bitdir/LibR/apriconv-1.lib" "$RELEASE_OUT_DIR"
+    cp "apr$bitdir/LibR/apr-1."{lib,pdb} "$RELEASE_OUT_DIR"
+    cp "apr-util$bitdir/LibR/aprutil-1."{lib,pdb} "$RELEASE_OUT_DIR"
+    cp "apr-iconv$bitdir/LibR/apriconv-1."{lib,pdb} "$RELEASE_OUT_DIR"
     cp "apr$bitdir/Release/libapr-1."{lib,dll} "$RELEASE_OUT_DIR"
+    cp "apr$bitdir/Release/libapr.pdb" "$RELEASE_OUT_DIR"
+    cp "apr$bitdir/Release/libapr_src.pdb" "$RELEASE_OUT_DIR"
     cp "apr-iconv$bitdir/Release/libapriconv-1."{lib,dll} "$RELEASE_OUT_DIR"
+    cp "apr-iconv$bitdir/Release/libapriconv.pdb" "$RELEASE_OUT_DIR"
+    cp "apr-iconv$bitdir/Release/libapriconv_src.pdb" "$RELEASE_OUT_DIR"
     cp "apr-util$bitdir/Release/libaprutil-1."{lib,dll} "$RELEASE_OUT_DIR"
+    cp "apr-util$bitdir/Release/libaprutil.pdb" "$RELEASE_OUT_DIR"
+    cp "apr-util$bitdir/Release/libaprutil_src.pdb" "$RELEASE_OUT_DIR"
 
     INCLUDE_DIR="$STAGING_DIR/include/apr-1"
     mkdir -p "$INCLUDE_DIR"      || echo "$INCLUDE_DIR exists"
