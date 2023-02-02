@@ -44,7 +44,7 @@ apr_iconv_ccs_event(struct iconv_module *mod, int event, apr_pool_t *ctx)
 		if (mod->im_deplist == NULL)
 			return APR_EINVAL;
 		mod->im_methods = mod->im_deplist->im_desc->imd_data;
-		mod->im_data = mod->im_desc->imd_data;
+		mod->im_data = (void*)(mod->im_desc->imd_data);
 		break;
 	    case ICMODEV_UNLOAD:
 		break;
