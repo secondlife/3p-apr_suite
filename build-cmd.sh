@@ -93,20 +93,15 @@ case "$AUTOBUILD_PLATFORM" in
     export CFLAGS="$opts -I$SDKROOT/usr/include"
     export CXXFLAGS="$opts"
     export LDFLAGS="$opts"
+    export MAKEFLAGS="-j${AUTOBUILD_CPU_COUNT:-2}"
 
     pushd "$TOP_DIR/apr"
-    rm configure || echo "configure already gone"
-    autoreconf -fi
-##  ./buildconf
     ./configure --prefix="$PREFIX"
     make
     make install
     popd
 
     pushd "$TOP_DIR/apr-util"
-    rm configure || echo "configure already gone"
-    autoreconf -fi
-##  ./buildconf
     ./configure --prefix="$PREFIX" --with-apr="$PREFIX" --with-expat="$PREFIX"
     make
     make install
