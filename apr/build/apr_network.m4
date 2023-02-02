@@ -63,6 +63,15 @@ AC_DEFUN([APR_CHECK_WORKING_GETADDRINFO], [
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#ifdef HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
 
 int main(void) {
     struct addrinfo hints, *ai;
@@ -151,6 +160,12 @@ AC_DEFUN([APR_CHECK_WORKING_GETNAMEINFO], [
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
+#ifdef HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
 
 int main(void) {
     struct sockaddr_in sa;
@@ -193,6 +208,9 @@ AC_DEFUN([APR_CHECK_NEGATIVE_EAI], [
   AC_TRY_RUN( [
 #ifdef HAVE_NETDB_H
 #include <netdb.h>
+#endif
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
 #endif
 
 int main(void) {
@@ -388,9 +406,11 @@ AC_DEFUN([APR_CHECK_TCP_NODELAY_INHERITED], [
   AC_CACHE_CHECK(if TCP_NODELAY setting is inherited from listening sockets, ac_cv_tcp_nodelay_inherited,[
   AC_TRY_RUN( [
 #include <stdio.h>
+#include <stdlib.h>
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
+#include <string.h>
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
@@ -402,6 +422,9 @@ AC_DEFUN([APR_CHECK_TCP_NODELAY_INHERITED], [
 #endif
 #ifndef HAVE_SOCKLEN_T
 typedef int socklen_t;
+#endif
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
 #endif
 int main(void) {
     int listen_s, connected_s, client_s;
@@ -588,6 +611,9 @@ typedef int socklen_t;
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
 int main(void) {
     int listen_s, connected_s, client_s;
     int listen_port, rc;
@@ -734,6 +760,12 @@ AC_TRY_COMPILE([
 #ifdef HAVE_ARPA_INET_H
 #include <arpa/inet.h>
 #endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
 ],[
 inet_addr("127.0.0.1");
 ],[
@@ -754,6 +786,10 @@ fi
 AC_DEFUN([APR_CHECK_INET_NETWORK], [
 AC_CACHE_CHECK(for inet_network, ac_cv_func_inet_network,[
 AC_TRY_COMPILE([
+#include <sys/socket.h>
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -888,8 +924,16 @@ dnl check for presence of SCTP protocol support
 dnl
 AC_DEFUN([APR_CHECK_SCTP],
 [
-  AC_CACHE_CHECK([whether SCTP is supported], [apr_cv_sctp], [
-  AC_TRY_RUN([
+AC_ARG_ENABLE([sctp],
+    APR_HELP_STRING([--disable-sctp], [disable SCTP protocol support]),
+    [apr_wants_sctp=$enableval],
+    [apr_wants_sctp=any])
+
+if test "$apr_wants_sctp" = no; then
+    apr_cv_sctp=no
+else
+    AC_CACHE_CHECK([whether SCTP is supported], [apr_cv_sctp], [
+    AC_TRY_RUN([
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -914,6 +958,11 @@ int main(void) {
        exit(2);
     exit(0);
 }], [apr_cv_sctp=yes], [apr_cv_sctp=no], [apr_cv_sctp=no])])
+fi
+
+if test "${apr_wants_sctp}X${apr_cv_sctp}" = yesXno; then
+   AC_MSG_ERROR([SCTP support requested but not available])
+fi
 
 if test "$apr_cv_sctp" = "yes"; then
     have_sctp=1
@@ -927,7 +976,9 @@ AC_DEFUN([APR_CHECK_MCAST], [
 AC_CACHE_CHECK([for struct ip_mreq], [apr_cv_struct_ipmreq], [
 AC_TRY_COMPILE([
 #include <sys/types.h>
+#ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
+#endif
 ], [
     struct ip_mreq mip;
     mip.imr_interface.s_addr = INADDR_ANY;

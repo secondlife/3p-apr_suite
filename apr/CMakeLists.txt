@@ -15,9 +15,11 @@
 #
 # Read README.cmake before using this.
 
-PROJECT(APR C)
-
+# CMAKE_MINIMUM_REQUIRED should be the first directive in the file:
+# https://cmake.org/cmake/help/latest/command/cmake_minimum_required.html
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+
+PROJECT(APR C)
 
 OPTION(APR_INSTALL_PRIVATE_H  "Install selected private .h files (for httpd)"  OFF)
 OPTION(APR_HAVE_IPV6        "IPv6 support"                 ON)
@@ -49,11 +51,11 @@ CONFIGURE_FILE(include/apr.hwc
                ${PROJECT_BINARY_DIR}/apr.h)
 
 ADD_EXECUTABLE(gen_test_char tools/gen_test_char.c)
-GET_TARGET_PROPERTY(GEN_TEST_CHAR_EXE gen_test_char LOCATION)
+
 ADD_CUSTOM_COMMAND(
   COMMENT "Generating character tables, apr_escape_test_char.h, for current locale"
   DEPENDS gen_test_char
-  COMMAND ${GEN_TEST_CHAR_EXE} > ${PROJECT_BINARY_DIR}/apr_escape_test_char.h
+  COMMAND $<TARGET_FILE:gen_test_char> > ${PROJECT_BINARY_DIR}/apr_escape_test_char.h
   OUTPUT ${PROJECT_BINARY_DIR}/apr_escape_test_char.h
 )
 ADD_CUSTOM_TARGET(
@@ -131,7 +133,9 @@ SET(APR_PUBLIC_HEADERS_GENERATED
 
 SET(APR_SOURCES
   atomic/win32/apr_atomic.c
+  atomic/win32/apr_atomic64.c
   dso/win32/dso.c
+  encoding/apr_encode.c
   encoding/apr_escape.c
   file_io/unix/copy.c
   file_io/unix/fileacc.c
@@ -206,53 +210,52 @@ SET(APR_SOURCES
   user/win32/userinfo.c
 )
 
-SET(APR_TEST_SOURCES
-  test/abts.c
-  test/testargs.c
-  test/testatomic.c
-  test/testcond.c
-  test/testdir.c
-  test/testdso.c
-  test/testdup.c
-  test/testenv.c
-  test/testescape.c
-  test/testfile.c
-  test/testfilecopy.c
-  test/testfileinfo.c
-  test/testflock.c
-  test/testfmt.c
-  test/testfnmatch.c
-  test/testglobalmutex.c
-  test/testhash.c
-  test/testipsub.c
-  test/testlfs.c
-  test/testlock.c
-  test/testmmap.c
-  test/testnames.c
-  test/testoc.c
-  test/testpath.c
-  test/testpipe.c
-  test/testpoll.c
-  test/testpools.c
-  test/testproc.c
-  test/testprocmutex.c
-  test/testrand.c
-  test/testshm.c
-  test/testskiplist.c
-  test/testsleep.c
-  test/testsock.c
-  test/testsockets.c
-  test/testsockopt.c
-  test/teststr.c
-  test/teststrnatcmp.c
-  test/testtable.c
-  test/testtemp.c
-  test/testthread.c
-  test/testtime.c
-  test/testud.c
-  test/testuser.c
-  test/testutil.c
-  test/testvsn.c
+SET(APR_TEST_SUITES
+  testargs
+  testatomic
+  testcond
+  testdir
+  testdso
+  testdup
+  testenv
+  testencode
+  testescape
+  testfile
+  testfilecopy
+  testfileinfo
+  testflock
+  testfmt
+  testfnmatch
+  testglobalmutex
+  testhash
+  testipsub
+  testlfs
+  testlock
+  testmmap
+  testnames
+  testoc
+  testpath
+  testpipe
+  testpoll
+  testpools
+  testproc
+  testprocmutex
+  testrand
+  testshm
+  testskiplist
+  testsleep
+  testsock
+  testsockets
+  testsockopt
+  teststr
+  teststrnatcmp
+  testtable
+  testtemp
+  testthread
+  testtime
+  testud
+  testuser
+  testvsn
 )
 
 SET(install_targets)
@@ -314,12 +317,25 @@ IF(APR_BUILD_TESTAPR)
   ENDIF()
   ADD_TEST(NAME testapp COMMAND testapp)
 
+  SET (APR_TEST_SOURCES
+    test/abts.c
+    test/testutil.c
+    )
+
+  FOREACH(testsuite ${APR_TEST_SUITES})
+    LIST(APPEND APR_TEST_SOURCES test/${testsuite}.c)
+  ENDFOREACH()
+
   ADD_EXECUTABLE(testall ${APR_TEST_SOURCES})
   TARGET_LINK_LIBRARIES(testall ${whichapr} ${APR_SYSTEM_LIBS})
+  SET_TARGET_PROPERTIES(testall PROPERTIES COMPILE_DEFINITIONS "BINPATH=$<TARGET_FILE_DIR:testall>")
   IF(apiflag)
     SET_TARGET_PROPERTIES(testall PROPERTIES COMPILE_FLAGS ${apiflag})
   ENDIF()
-  ADD_TEST(NAME testall COMMAND testall)
+
+  FOREACH(test ${APR_TEST_SUITES})
+    ADD_TEST(NAME ${test} COMMAND testall -v ${test})
+  ENDFOREACH()
 
   ADD_LIBRARY(mod_test MODULE test/mod_test.c)
   TARGET_LINK_LIBRARIES(mod_test ${whichapr} ${APR_SYSTEM_LIBS})
@@ -356,6 +372,7 @@ IF(APR_BUILD_TESTAPR)
     STRING(REGEX REPLACE ".*/([^\\]+)\\.c" "\\1" proggie ${sourcefile})
     ADD_EXECUTABLE(${proggie} ${sourcefile})
     TARGET_LINK_LIBRARIES(${proggie} ${whichapr} ${APR_SYSTEM_LIBS})
+    SET_TARGET_PROPERTIES(${proggie} PROPERTIES COMPILE_DEFINITIONS "BINPATH=$<TARGET_FILE_DIR:${proggie}>")
     IF(apiflag)
       SET_TARGET_PROPERTIES(${proggie} PROPERTIES COMPILE_FLAGS ${apiflag})
     ENDIF()
