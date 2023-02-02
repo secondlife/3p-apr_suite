@@ -14,7 +14,7 @@ buckets/apr_buckets_refcount.lo: buckets/apr_buckets_refcount.c .make.dirs inclu
 buckets/apr_buckets_simple.lo: buckets/apr_buckets_simple.c .make.dirs include/apr_buckets.h
 buckets/apr_buckets_socket.lo: buckets/apr_buckets_socket.c .make.dirs include/apr_buckets.h
 crypto/apr_crypto.lo: crypto/apr_crypto.c .make.dirs include/apr_crypto.h include/apu_errno.h include/apu_version.h include/private/apr_crypto_internal.h include/private/apu_internal.h
-crypto/apr_md4.lo: crypto/apr_md4.c .make.dirs include/apr_md4.h include/apr_xlate.h
+crypto/apr_md4.lo: crypto/apr_md4.c .make.dirs include/apr_crypto.h include/apr_md4.h include/apr_xlate.h include/apu_errno.h
 crypto/apr_md5.lo: crypto/apr_md5.c .make.dirs include/apr_md5.h include/apr_xlate.h
 crypto/apr_passwd.lo: crypto/apr_passwd.c .make.dirs include/apr_md5.h include/apr_sha1.h include/apr_xlate.h
 crypto/apr_sha1.lo: crypto/apr_sha1.c .make.dirs include/apr_base64.h include/apr_sha1.h include/apr_xlate.h
@@ -63,7 +63,7 @@ OBJECTS_win32 = $(OBJECTS_all)
 
 HEADERS = $(top_srcdir)/include/apr_anylock.h $(top_srcdir)/include/apr_base64.h $(top_srcdir)/include/apr_buckets.h $(top_srcdir)/include/apr_crypto.h $(top_srcdir)/include/apr_date.h $(top_srcdir)/include/apr_dbd.h $(top_srcdir)/include/apr_dbm.h $(top_srcdir)/include/apr_hooks.h $(top_srcdir)/include/apr_ldap_init.h $(top_srcdir)/include/apr_ldap_option.h $(top_srcdir)/include/apr_ldap_rebind.h $(top_srcdir)/include/apr_ldap_url.h $(top_srcdir)/include/apr_md4.h $(top_srcdir)/include/apr_md5.h $(top_srcdir)/include/apr_memcache.h $(top_srcdir)/include/apr_optional.h $(top_srcdir)/include/apr_optional_hooks.h $(top_srcdir)/include/apr_queue.h $(top_srcdir)/include/apr_redis.h $(top_srcdir)/include/apr_reslist.h $(top_srcdir)/include/apr_rmm.h $(top_srcdir)/include/apr_sdbm.h $(top_srcdir)/include/apr_sha1.h $(top_srcdir)/include/apr_siphash.h $(top_srcdir)/include/apr_strmatch.h $(top_srcdir)/include/apr_thread_pool.h $(top_srcdir)/include/apr_uri.h $(top_srcdir)/include/apr_uuid.h $(top_srcdir)/include/apr_xlate.h $(top_srcdir)/include/apr_xml.h $(top_srcdir)/include/apu_errno.h $(top_srcdir)/include/apu_version.h $(top_srcdir)/include/private/apr_crypto_internal.h $(top_srcdir)/include/private/apr_dbd_internal.h $(top_srcdir)/include/private/apr_dbd_odbc_v2.h $(top_srcdir)/include/private/apr_dbm_private.h $(top_srcdir)/include/private/apu_internal.h
 
-SOURCE_DIRS = xml redis dbm encoding hooks buckets uri misc crypto dbd strmatch memcache dbm/sdbm ldap xlate $(EXTRA_SOURCE_DIRS)
+SOURCE_DIRS = buckets crypto dbd dbm dbm/sdbm encoding hooks ldap memcache misc redis strmatch uri xlate xml $(EXTRA_SOURCE_DIRS)
 
 ldap/apr_ldap_init.lo: ldap/apr_ldap_init.c .make.dirs include/private/apu_internal.h
 ldap/apr_ldap_option.lo: ldap/apr_ldap_option.c .make.dirs 
