@@ -95,8 +95,8 @@ case "$AUTOBUILD_PLATFORM" in
     export LDFLAGS="$opts"
 
     pushd "$TOP_DIR/apr"
-##  rm configure || echo "configure already gone"
-##  autoreconf -fi
+    rm configure || echo "configure already gone"
+    autoreconf -fi
 ##  ./buildconf
     ./configure --prefix="$PREFIX"
     make
@@ -104,8 +104,8 @@ case "$AUTOBUILD_PLATFORM" in
     popd
 
     pushd "$TOP_DIR/apr-util"
-##  rm configure || echo "configure already gone"
-##  autoreconf -fi
+    rm configure || echo "configure already gone"
+    autoreconf -fi
 ##  ./buildconf
     ./configure --prefix="$PREFIX" --with-apr="$PREFIX" --with-expat="$PREFIX"
     make
