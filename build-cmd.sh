@@ -95,18 +95,18 @@ case "$AUTOBUILD_PLATFORM" in
     export LDFLAGS="$opts"
 
     pushd "$TOP_DIR/apr"
-    rm configure || echo "configure already gone"
-    autoreconf -fi
-    ./buildconf
+##  rm configure || echo "configure already gone"
+##  autoreconf -fi
+##  ./buildconf
     ./configure --prefix="$PREFIX"
     make
     make install
     popd
 
     pushd "$TOP_DIR/apr-util"
-    rm configure || echo "configure already gone"
-    autoreconf -fi
-    ./buildconf
+##  rm configure || echo "configure already gone"
+##  autoreconf -fi
+##  ./buildconf
     ./configure --prefix="$PREFIX" --with-apr="$PREFIX" --with-expat="$PREFIX"
     make
     make install
@@ -190,11 +190,8 @@ case "$AUTOBUILD_PLATFORM" in
 
     # do release builds
     pushd "$TOP_DIR/apr"
-<<<<<<< HEAD
-=======
-        rm configure || echo "configure already gone"
-        autoreconf -fi
->>>>>>> 5377beb (SL-18837: Tweak build-cmd.sh, allow independent platform builds.)
+##      rm configure || echo "configure already gone"
+##      autoreconf -fi
         LDFLAGS="$opts" CFLAGS="$opts" CXXFLAGS="$opts" \
             ./configure --prefix="$PREFIX" --libdir="$PREFIX/lib/release"
         make
@@ -202,11 +199,8 @@ case "$AUTOBUILD_PLATFORM" in
     popd
 
     pushd "$TOP_DIR/apr-iconv"
-<<<<<<< HEAD
-=======
-        rm configure || echo "configure already gone"
-        autoreconf -fi
->>>>>>> 5377beb (SL-18837: Tweak build-cmd.sh, allow independent platform builds.)
+##      rm configure || echo "configure already gone"
+##      autoreconf -fi
         # NOTE: the autotools scripts in iconv don't honor the --libdir switch so we
         # need to build to a dummy prefix and copy the files into the correct place
         mkdir "$PREFIX/iconv"
@@ -224,11 +218,8 @@ case "$AUTOBUILD_PLATFORM" in
     popd
 
     pushd "$TOP_DIR/apr-util"
-<<<<<<< HEAD
-=======
-        rm configure || echo "configure already gone"
-        autoreconf -fi
->>>>>>> 5377beb (SL-18837: Tweak build-cmd.sh, allow independent platform builds.)
+##      rm configure || echo "configure already gone"
+##      autoreconf -fi
         # the autotools can't find the expat static lib with the layout of our
         # libraries so we need to copy the file to the correct location temporarily
         cp "$PREFIX/packages/lib/release/libexpat.a" "$PREFIX/packages/lib/"
