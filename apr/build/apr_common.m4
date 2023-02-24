@@ -202,14 +202,18 @@ dnl and restoring the original variable contents.  This makes it possible
 dnl for a user to override configure when it does something stupid.
 dnl
 AC_DEFUN([APR_RESTORE_THE_ENVIRONMENT], [
-if test "x$apr_ste_save_$1" = "x"; then
+dnl Check whether $apr_ste_save_$1 is empty or
+dnl only whitespace. The verbatim "X" is token number 1,
+dnl the following whitespace will be ignored.
+set X $apr_ste_save_$1
+if test ${#} -eq 1; then
   $2$1="$$1"
   $1=
 else
   if test "x$apr_ste_save_$1" = "x$$1"; then
     $2$1=
   else
-    $2$1=`echo $$1 | sed -e "s%${apr_ste_save_$1}%%"`
+    $2$1=`echo "$$1" | sed -e "s%${apr_ste_save_$1}%%"`
     $1="$apr_ste_save_$1"
   fi
 fi
@@ -448,38 +452,6 @@ fi
 
 
 dnl
-dnl APR_CHECK_SIZEOF_EXTENDED(INCLUDES, TYPE [, CROSS_SIZE])
-dnl
-dnl A variant of AC_CHECK_SIZEOF which allows the checking of
-dnl sizes of non-builtin types
-dnl
-AC_DEFUN([APR_CHECK_SIZEOF_EXTENDED],
-[changequote(<<, >>)dnl
-dnl The name to #define.
-define(<<AC_TYPE_NAME>>, translit(sizeof_$2, [a-z *], [A-Z_P]))dnl
-dnl The cache variable name.
-define(<<AC_CV_NAME>>, translit(ac_cv_sizeof_$2, [ *], [_p]))dnl
-changequote([, ])dnl
-AC_MSG_CHECKING(size of $2)
-AC_CACHE_VAL(AC_CV_NAME,
-[AC_TRY_RUN([#include <stdio.h>
-$1
-main()
-{
-  FILE *f=fopen("conftestval", "w");
-  if (!f) exit(1);
-  fprintf(f, "%d\n", sizeof($2));
-  exit(0);
-}], AC_CV_NAME=`cat conftestval`, AC_CV_NAME=0, ifelse([$3],,,
-AC_CV_NAME=$3))])dnl
-AC_MSG_RESULT($AC_CV_NAME)
-AC_DEFINE_UNQUOTED(AC_TYPE_NAME, $AC_CV_NAME, [The size of ]$2)
-undefine([AC_TYPE_NAME])dnl
-undefine([AC_CV_NAME])dnl
-])
-
-
-dnl
 dnl APR_TRY_COMPILE_NO_WARNING(INCLUDES, FUNCTION-BODY,
 dnl             [ACTIONS-IF-NO-WARNINGS], [ACTIONS-IF-WARNINGS])
 dnl
@@ -495,14 +467,19 @@ AC_DEFUN([APR_TRY_COMPILE_NO_WARNING],
    CFLAGS="$CFLAGS -Werror"
  fi
  AC_COMPILE_IFELSE(
-  [#include "confdefs.h"
-  ]
-  [[$1]]
-  [int main(int argc, const char *const *argv) {]
-  [[$2]]
-  [   return 0; }],
-  [$3], [$4])
- CFLAGS=$apr_save_CFLAGS
+  [AC_LANG_SOURCE(
+   [
+#ifndef PACKAGE_NAME
+#include "confdefs.h"
+#endif
+   ]
+   [[$1]]
+   [int main(int argc, const char *const *argv) {]
+   [[$2]]
+   [   return 0; }]
+  )], [CFLAGS=$apr_save_CFLAGS
+$3],  [CFLAGS=$apr_save_CFLAGS
+$4])
 ])
 
 dnl
@@ -515,12 +492,14 @@ dnl  string.
 dnl
 dnl
 AC_DEFUN([APR_CHECK_STRERROR_R_RC], [
-AC_MSG_CHECKING(for type of return code from strerror_r)
-AC_TRY_RUN([
+AC_CACHE_CHECK([whether return code from strerror_r has type int],
+[ac_cv_strerror_r_rc_int],
+[AC_TRY_RUN([
 #include <errno.h>
 #include <string.h>
 #include <stdio.h>
-main()
+#include <stdlib.h>
+int main(void)
 {
   char buf[1024];
   if (strerror_r(ERANGE, buf, sizeof buf) < 1) {
@@ -532,14 +511,10 @@ main()
 }], [
     ac_cv_strerror_r_rc_int=yes ], [
     ac_cv_strerror_r_rc_int=no ], [
-    ac_cv_strerror_r_rc_int=no ] )
+    ac_cv_strerror_r_rc_int=no ] ) ] )
 if test "x$ac_cv_strerror_r_rc_int" = xyes; then
   AC_DEFINE(STRERROR_R_RC_INT, 1, [Define if strerror returns int])
-  msg="int"
-else
-  msg="pointer"
 fi
-AC_MSG_RESULT([$msg])
 ] )
 
 dnl
@@ -964,10 +939,43 @@ AC_SUBST(MKDEP)
 ])
 
 dnl
+dnl APR_CHECK_TYPES_FMT_COMPATIBLE(TYPE-1, TYPE-2, FMT-TAG, 
+dnl                                [ACTION-IF-TRUE], [ACTION-IF-FALSE])
+dnl
+dnl Try to determine whether two types are the same and accept the given
+dnl printf formatter (bare token, e.g. literal d, ld, etc).
+dnl
+AC_DEFUN([APR_CHECK_TYPES_FMT_COMPATIBLE], [
+define([apr_cvname], apr_cv_typematch_[]translit([$1], [ ], [_])_[]translit([$2], [ ], [_])_[][$3])
+AC_CACHE_CHECK([whether $1 and $2 use fmt %$3], apr_cvname, [
+APR_TRY_COMPILE_NO_WARNING([#include <sys/types.h>
+#include <stdio.h>
+#ifdef HAVE_STDINT_H
+#include <stdint.h>
+#endif
+], [
+    $1 chk1, *ptr1;
+    $2 chk2, *ptr2 = &chk1;
+    ptr1 = &chk2;
+    *ptr1 = *ptr2 = 0;
+    printf("%$3 %$3", chk1, chk2);
+], [apr_cvname=yes], [apr_cvname=no])])
+if test "$apr_cvname" = "yes"; then
+    :
+    $4
+else
+    :
+    $5
+fi
+])
+
+dnl
 dnl APR_CHECK_TYPES_COMPATIBLE(TYPE-1, TYPE-2, [ACTION-IF-TRUE])
 dnl
 dnl Try to determine whether two types are the same. Only works
 dnl for gcc and icc.
+dnl
+dnl @deprecated @see APR_CHECK_TYPES_FMT_COMPATIBLE
 dnl
 AC_DEFUN([APR_CHECK_TYPES_COMPATIBLE], [
 define([apr_cvname], apr_cv_typematch_[]translit([$1], [ ], [_])_[]translit([$2], [ ], [_]))

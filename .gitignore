@@ -1,5 +1,5 @@
-syntax: glob
 stage/
+*.exe
 autobuild-parabuild-bootstrap/
 .*.swp
 .DS_Store
@@ -22,3 +22,15 @@ apr/Release
 apr-util/xml/expat/lib/LibD
 apr-util/xml/expat/lib/LibR
 config.log
+*.o
+*.lo
+*.la
+Makefile
+*.mk
+libtool
+*.pc
+*-config.out
+.libs
+.make.dirs
+*.exp
+config.status

@@ -27,25 +27,15 @@ apr_status_t apr_get_oslevel(apr_oslevel_e *level)
 {
     if (apr_os_level == APR_WIN_UNK) 
     {
-        static OSVERSIONINFO oslev;
-        oslev.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-        GetVersionEx(&oslev);
+        OSVERSIONINFOEXW oslev;
+        oslev.dwOSVersionInfoSize = sizeof(oslev);
+        if (!GetVersionExW((OSVERSIONINFOW*) &oslev)) {
+            return apr_get_os_error();
+        }
 
         if (oslev.dwPlatformId == VER_PLATFORM_WIN32_NT) 
         {
-            static unsigned int servpack = 0;
-            TCHAR *pservpack;
-            if ((pservpack = oslev.szCSDVersion)) {
-                while (*pservpack && !apr_isdigit(*pservpack)) {
-                    pservpack++;
-                }
-                if (*pservpack)
-#ifdef _UNICODE
-                    servpack = _wtoi(pservpack);
-#else
-                    servpack = atoi(pservpack);
-#endif
-            }
+            unsigned int servpack = oslev.wServicePackMajor;
 
             if (oslev.dwMajorVersion < 3) {
                 apr_os_level = APR_WIN_UNSUP;
@@ -97,10 +87,21 @@ apr_status_t apr_get_oslevel(apr_oslevel_e *level)
                 }
             }
             else if (oslev.dwMajorVersion == 6) {
-                apr_os_level = APR_WIN_VISTA;
+                if (oslev.dwMinorVersion == 0)
+                    apr_os_level = APR_WIN_VISTA;
+                else if (oslev.dwMinorVersion == 1) {
+                    if (servpack < 1)
+                        apr_os_level = APR_WIN_7;
+                    else
+                        apr_os_level = APR_WIN_7_SP1;
+                }
+                else if (oslev.dwMinorVersion == 2)
+                    apr_os_level = APR_WIN_8;
+                else
+                    apr_os_level = APR_WIN_8_1;
             }
             else {
-                apr_os_level = APR_WIN_XP;
+                apr_os_level = APR_WIN_10;
             }
         }
 #ifndef WINNT
@@ -148,7 +149,7 @@ apr_status_t apr_get_oslevel(apr_oslevel_e *level)
 
     *level = apr_os_level;
 
-    if (apr_os_level < APR_WIN_UNSUP) {
+    if (apr_os_level <= APR_WIN_UNSUP) {
         return APR_EGENERAL;
     }
 
@@ -161,9 +162,11 @@ apr_status_t apr_get_oslevel(apr_oslevel_e *level)
  */
 
 static const char* const lateDllName[DLL_defined] = {
-    "kernel32", "advapi32", "mswsock",  "ws2_32", "shell32", "ntdll.dll"  };
+    "kernel32", "advapi32", "mswsock",  "ws2_32", "shell32", "ntdll.dll",
+    "Iphplapi"  };
 static HMODULE lateDllHandle[DLL_defined] = {
-     NULL,       NULL,       NULL,       NULL,     NULL,       NULL       };
+     NULL,       NULL,       NULL,       NULL,     NULL,      NULL,
+     NULL       };
 
 FARPROC apr_load_dll_func(apr_dlltoken_e fnLib, char* fnName, int ordinal)
 {

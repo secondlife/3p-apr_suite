@@ -86,8 +86,7 @@ APR_DECLARE(apr_status_t) apr_file_setaside(apr_file_t **new_file,
                                             apr_file_t *old_file,
                                             apr_pool_t *p)
 {
-    *new_file = (apr_file_t *)apr_palloc(p, sizeof(apr_file_t));
-    memcpy(*new_file, old_file, sizeof(apr_file_t));
+    *new_file = (apr_file_t *)apr_pmemdup(p, old_file, sizeof(apr_file_t));
     (*new_file)->pool = p;
 
     if (old_file->buffered) {
@@ -113,14 +112,13 @@ APR_DECLARE(apr_status_t) apr_file_setaside(apr_file_t **new_file,
     }
 
     if (!(old_file->flags & APR_FOPEN_NOCLEANUP)) {
+        apr_pool_cleanup_kill(old_file->pool, (void *)old_file,
+                              apr_file_cleanup);
         apr_pool_cleanup_register(p, (void *)(*new_file), 
                                   apr_file_cleanup,
                                   apr_file_cleanup);
     }
 
     old_file->filedes = -1;
-    apr_pool_cleanup_kill(old_file->pool, (void *)old_file,
-                          apr_file_cleanup);
-
     return APR_SUCCESS;
 }

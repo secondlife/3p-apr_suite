@@ -74,7 +74,7 @@
 #if APR_HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
-#if APR_HAVE_SYS_STAT_H
+#ifdef HAVE_SYS_STAT_H
 #include <sys/stat.h>
 #endif
 #if APR_HAVE_FCNTL_H
@@ -216,7 +216,10 @@ APR_DECLARE(apr_status_t) apr_file_mktemp(apr_file_t **fp, char *template, apr_i
         apr_pool_cleanup_register((*fp)->pool, (void *)(*fp),
                                   apr_unix_file_cleanup,
                                   apr_unix_child_file_cleanup);
-    }
+
+        /* Clear APR_FOPEN_NOCLEANUP set by apr_os_file_put() */
+        (*fp)->flags &= ~APR_FOPEN_NOCLEANUP;
+     }
 #endif
     return APR_SUCCESS;
 }

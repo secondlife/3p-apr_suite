@@ -86,7 +86,7 @@ static int find_prefix(apr_xml_parser *parser, const char *prefix)
     ** prefix.
     */
     for (; elem; elem = elem->parent) {
-	apr_xml_ns_scope *ns_scope = elem->ns_scope;
+	apr_xml_ns_scope *ns_scope;
 
 	for (ns_scope = elem->ns_scope; ns_scope; ns_scope = ns_scope->next) {
 	    if (strcmp(prefix, ns_scope->prefix) == 0) {
@@ -119,6 +119,26 @@ static int find_prefix(apr_xml_parser *parser, const char *prefix)
     /* not found */
     return APR_XML_NS_ERROR_UNKNOWN_PREFIX;
 }
+
+/* return original prefix given ns index */
+static const char * find_prefix_name(const apr_xml_elem *elem, int ns, int parent)
+{
+    /*
+    ** Walk up the tree, looking for a namespace scope that defines this
+    ** prefix.
+    */
+    for (; elem; elem = parent ? elem->parent : NULL) {
+	apr_xml_ns_scope *ns_scope = elem->ns_scope;
+
+	for (; ns_scope; ns_scope = ns_scope->next) {
+	    if (ns_scope->ns == ns)
+		return ns_scope->prefix;
+	}
+    }
+    /* not found */
+    return "";
+}
+
 
 static void start_handler(void *userdata, const char *name, const char **attrs)
 {
@@ -437,8 +457,7 @@ APU_DECLARE(apr_status_t) apr_xml_parser_feed(apr_xml_parser *parser,
 APU_DECLARE(apr_status_t) apr_xml_parser_done(apr_xml_parser *parser,
                                               apr_xml_doc **pdoc)
 {
-    char end;
-    apr_status_t status = do_parse(parser, &end, 0, 1 /* is_final */);
+    apr_status_t status = do_parse(parser, "", 0, 1 /* is_final */);
 
     /* get rid of the parser */
     (void) apr_pool_cleanup_run(parser->p, parser, cleanup_parser);
@@ -646,7 +665,8 @@ static apr_size_t elem_size(const apr_xml_elem *elem, int style,
 {
     apr_size_t size;
 
-    if (style == APR_XML_X2T_FULL || style == APR_XML_X2T_FULL_NS_LANG) {
+    if (style == APR_XML_X2T_FULL || style == APR_XML_X2T_FULL_NS_LANG ||
+	style == APR_XML_X2T_PARSED) {
 	const apr_xml_attr *attr;
 
 	size = 0;
@@ -670,10 +690,28 @@ static apr_size_t elem_size(const apr_xml_elem *elem, int style,
 		size += 11 + strlen(elem->lang) + 1;
 	    }
 	}
+	else if (style == APR_XML_X2T_PARSED) {
+	    apr_xml_ns_scope *ns_scope = elem->ns_scope;
+
+	    /* compute size of: ' xmlns:%s="%s"' */
+	    for (; ns_scope; ns_scope = ns_scope->next) {
+		size += 10 + strlen(find_prefix_name(elem, ns_scope->ns, 0)) +
+			     strlen(APR_XML_GET_URI_ITEM(namespaces, ns_scope->ns));
+	    }
+
+	    if (elem->lang != NULL) {
+		/* compute size of: ' xml:lang="%s"' */
+		size += 11 + strlen(elem->lang) + 1;
+	    }
+	}
 
 	if (elem->ns == APR_XML_NS_NONE) {
 	    /* compute size of: <%s> */
 	    size += 1 + strlen(elem->name) + 1;
+	}
+	else if (style == APR_XML_X2T_PARSED) {
+	    /* compute size of: <%s:%s> */
+	    size += 3 + strlen(find_prefix_name(elem, elem->ns, 1)) + strlen(elem->name);
 	}
 	else {
 	    int ns = ns_map ? ns_map[elem->ns] : elem->ns;
@@ -699,6 +737,10 @@ static apr_size_t elem_size(const apr_xml_elem *elem, int style,
 	    if (attr->ns == APR_XML_NS_NONE) {
 		/* compute size of: ' %s="%s"' */
 		size += 1 + strlen(attr->name) + 2 + strlen(attr->value) + 1;
+	    }
+	    else if (style == APR_XML_X2T_PARSED) {
+		/* compute size of: ' %s:%s="%s"' */
+		size += 5 + strlen(find_prefix_name(elem, attr->ns, 1)) + strlen(attr->name) + strlen(attr->value);
 	    }
 	    else {
 		/* compute size of: ' ns%d:%s="%s"' */
@@ -733,7 +775,7 @@ static apr_size_t elem_size(const apr_xml_elem *elem, int style,
 
     for (elem = elem->first_child; elem; elem = elem->next) {
 	/* the size of the child element plus the CDATA that follows it */
-	size += (elem_size(elem, APR_XML_X2T_FULL, NULL, ns_map) +
+	size += (elem_size(elem, style == APR_XML_X2T_PARSED ? APR_XML_X2T_PARSED : APR_XML_X2T_FULL, NULL, ns_map) +
 		 text_size(elem->following_cdata.first));
     }
 
@@ -757,13 +799,15 @@ static char *write_elem(char *s, const apr_xml_elem *elem, int style,
     apr_size_t len;
     int ns;
 
-    if (style == APR_XML_X2T_FULL || style == APR_XML_X2T_FULL_NS_LANG) {
+    if (style == APR_XML_X2T_FULL || style == APR_XML_X2T_FULL_NS_LANG ||
+	style == APR_XML_X2T_PARSED) {
 	int empty = APR_XML_ELEM_IS_EMPTY(elem);
 	const apr_xml_attr *attr;
 
-	if (elem->ns == APR_XML_NS_NONE) {
+	if (elem->ns == APR_XML_NS_NONE)
 	    len = sprintf(s, "<%s", elem->name);
-	}
+	else if (style == APR_XML_X2T_PARSED)
+	    len = sprintf(s, "<%s:%s", find_prefix_name(elem, elem->ns, 1), elem->name);
 	else {
 	    ns = ns_map ? ns_map[elem->ns] : elem->ns;
 	    len = sprintf(s, "<ns%d:%s", ns, elem->name);
@@ -773,10 +817,13 @@ static char *write_elem(char *s, const apr_xml_elem *elem, int style,
 	for (attr = elem->attr; attr; attr = attr->next) {
 	    if (attr->ns == APR_XML_NS_NONE)
 		len = sprintf(s, " %s=\"%s\"", attr->name, attr->value);
-            else {
-                ns = ns_map ? ns_map[attr->ns] : attr->ns;
-                len = sprintf(s, " ns%d:%s=\"%s\"", ns, attr->name, attr->value);
-            }
+	    else if (style == APR_XML_X2T_PARSED)
+		len = sprintf(s, " %s:%s=\"%s\"",
+			      find_prefix_name(elem, attr->ns, 1), attr->name, attr->value);
+	    else {
+		ns = ns_map ? ns_map[attr->ns] : attr->ns;
+		len = sprintf(s, " ns%d:%s=\"%s\"", ns, attr->name, attr->value);
+	    }
 	    s += len;
 	}
 
@@ -796,6 +843,18 @@ static char *write_elem(char *s, const apr_xml_elem *elem, int style,
 	    for (i = namespaces->nelts; i--;) {
 		len = sprintf(s, " xmlns:ns%d=\"%s\"", i,
 			      APR_XML_GET_URI_ITEM(namespaces, i));
+		s += len;
+	    }
+	}
+	else if (style == APR_XML_X2T_PARSED) {
+	    apr_xml_ns_scope *ns_scope = elem->ns_scope;
+
+	    for (; ns_scope; ns_scope = ns_scope->next) {
+		const char *prefix = find_prefix_name(elem, ns_scope->ns, 0);
+
+		len = sprintf(s, " xmlns%s%s=\"%s\"",
+			      *prefix ? ":" : "", *prefix ? prefix : "",
+			      APR_XML_GET_URI_ITEM(namespaces, ns_scope->ns));
 		s += len;
 	    }
 	}
@@ -823,14 +882,17 @@ static char *write_elem(char *s, const apr_xml_elem *elem, int style,
     s = write_text(s, elem->first_cdata.first);
 
     for (child = elem->first_child; child; child = child->next) {
-	s = write_elem(s, child, APR_XML_X2T_FULL, NULL, ns_map);
+	s = write_elem(s, child,
+		       style == APR_XML_X2T_PARSED ? APR_XML_X2T_PARSED : APR_XML_X2T_FULL,
+		       NULL, ns_map);
 	s = write_text(s, child->following_cdata.first);
     }
 
-    if (style == APR_XML_X2T_FULL || style == APR_XML_X2T_FULL_NS_LANG) {
-	if (elem->ns == APR_XML_NS_NONE) {
+    if (style == APR_XML_X2T_FULL || style == APR_XML_X2T_FULL_NS_LANG || style == APR_XML_X2T_PARSED) {
+	if (elem->ns == APR_XML_NS_NONE)
 	    len = sprintf(s, "</%s>", elem->name);
-	}
+	else if (style == APR_XML_X2T_PARSED)
+	    len = sprintf(s, "</%s:%s>", find_prefix_name(elem, elem->ns, 1), elem->name);
 	else {
 	    ns = ns_map ? ns_map[elem->ns] : elem->ns;
 	    len = sprintf(s, "</ns%d:%s>", ns, elem->name);

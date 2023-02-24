@@ -1,127 +1,157 @@
                                                      -*- coding: utf-8 -*-
-Changes for APR 1.4.5
+Changes for APR 1.7.1
 
-  *) Security: CVE-2011-1928
-     apr_fnmatch(): Fix high CPU loop.  [William Rowe]
+  *) SECURITY: CVE-2022-24963 (cve.mitre.org)
+     Integer Overflow or Wraparound vulnerability in apr_encode functions of 
+     Apache Portable Runtime (APR) allows an attacker to write beyond bounds 
+     of a buffer.
 
-  *) Fix top_builddir in installed apr_rules.mk.  [Bojan Smojver]
+  *) SECURITY: CVE-2022-28331 (cve.mitre.org)
+     On Windows, Apache Portable Runtime 1.7.0 and earlier may write beyond 
+     the end of a stack based buffer in apr_socket_sendv(). This is a result 
+     of integer overflow.
 
-Changes for APR 1.4.4
+  *) SECURITY: CVE-2021-35940 (cve.mitre.org)
+     Restore fix for out-of-bounds array dereference in apr_time_exp*() functions.
+     (This issue was addressed as CVE-2017-12613 in APR 1.6.3 and
+     later 1.6.x releases, but was missing in 1.7.0.)  [Stefan Sperling]
 
-  *) Windows: Fix command-line builds.  [William Rowe]
+  *) configure: Fix various build issues for compilers enforcing
+     strict C99 compliance.  PR 66396, 66408, 66426.
+     [Florian Weimer <fweimer redhat.com>, Sam James <sam gentoo.org>]
 
-Changes for APR 1.4.3
+  *) apr_atomic_read64(): Fix non-atomic read on 32-bit Windows [Ivan Zhakov]
 
-  *) Security: CVE-2011-0419
-     Reimplement apr_fnmatch() from scratch using a non-recursive
-     algorithm; now has improved compliance with the fnmatch() spec.
-     [William Rowe]
+  *) configure: Prefer posix name-based shared memory over SysV IPC.
+     [Jim Jagielski]
 
-  *) Fix environment-related crash using some non-standard builds on
-     Windows 7/Server 2008.  [Steve Hay <SteveHay planit.com>]
+  *) configure: Add --disable-sctp argument to forcibly disable SCTP
+     support, or --enable-sctp which fails if SCTP support is not
+     detected.  [Lubos Uhliarik <luhliari redhat.com>, Joe Orton]
 
-  *) poll, pollset, pollcb on Windows: Handle calls with no file/socket
-     descriptors.  PR 49882.  [Stefan Ruppert <sr myarm.com>, Jeff Trawick]
+  *) Fix handle leak in the Win32 apr_uid_current implementation.
+     PR 61165. [Ivan Zhakov]
 
-  *) Fix APR_IPV6_V6ONLY issues on Windows related to run-time behavior 
-     on Windows older than Vista and SDK/MinGW levels without IPV6_V6ONLY.
-     PR 45321.  [Sob <sob hisoftware.cz>]
+  *) Add error handling for lseek() failures in apr_file_write() and
+     apr_file_writev().  [Joe Orton]
 
-  *) Fix address handling when accepting an AF_INET socket from a socket
-     bound as AF_INET6.   PR 49678.  [Joe Orton]
+  *) Don't silently set APR_FOPEN_NOCLEANUP for apr_file_mktemp() created file
+     to avoid a fd and inode leak when/if later passed to apr_file_setaside().
+     [Yann Ylavic]
 
-  *) Fix error return values from apr_sockaddr_info_get() on Windows for
-     IPv6 builds.  [Ivan Zhakov <ivan visualsvn.com>]
+  *) APR's configure script uses AC_TRY_RUN to detect whether the return type
+     of strerror_r is int. When cross-compiling this defaults to no.
 
-  *) Add new experimental configure option --enable-allocator-uses-mmap to
-     use mmap instead of malloc in apr_allocator_alloc(). This greatly reduces
-     memory fragmentation with malloc implementations (e.g. glibc) that
-     don't handle allocationss of a page-size-multiples in an efficient way.
-     It also makes apr_allocator_max_free_set() actually have some effect
-     on such platforms. [Stefan Fritsch]
+     This commit adds an AC_CACHE_CHECK so users who cross-compile APR may
+     influence the outcome with a configure variable. [Sebastian Kemper
+     <sebastian_ml gmx net>]
 
-  *) configure: Support 64 and 32 bit universal builds for Darwin/
-     OS X 10.6+. [Jim Jagielski]
+  *) Add a cache check with which users who cross-compile APR
+     can influence the outcome of the /dev/zero test by setting the variable
+     ac_cv_mmap__dev_zero=yes [Sebastian Kemper <sebastian_ml gmx net>]
 
-  *) apr_sockaddr_info_get() on AIX: Fix a problem which could set
-     the port field in the native socket address to 1 when 0 was
-     specified.  PR 46964.  [Jeff Trawick]
-
-  *) configure: Make definition of apr_ino_t independent of
-     _FILE_OFFSET_BITS even on platforms where ino_t is 'unsigned int'.
+  *) Trick autoconf into printing the correct default prefix in the help.
      [Stefan Fritsch]
 
-  *) apr_ring: Workaround for aliasing problem that causes gcc 4.5 to
-     miscompile some brigade related code. PR 50190. [Stefan Fritsch]
+  *) Don't try to use PROC_PTHREAD by default when cross compiling.
+     [Yann Ylavic]
 
-  *) apr_file_flush_locked(): Handle short writes. [Stefan Fritsch]
+  *) Add the ability to cross compile APR. [Graham Leggett]
 
-  *) apr_pollset_create_ex(): Trap errors from pollset providers.
-     PR 49094.  [Sami Tolvanen <sami.tolvanen mywot.com>]
+  *) While cross-compiling, the tools/gen_test_char could not
+     be executed at build time, use AX_PROG_CC_FOR_BUILD to
+     build native tools/gen_test_char
 
-  *) apr_pollset_create*(): Fix memory lifetime problem with the wakeup
-     pipe when the pollset was created with APR_POLLSET_NOCOPY.
-     [Neil Conway <nrc cs.berkeley.edu>]
+     Support explicit libtool by variable assigning before buildcheck.sh,
+     it is helpful for cross-compiling (such as libtool=aarch64-linux-libtool)
+     [Hongxu Jia <hongxu.jia windriver.com>]
 
-  *) Fix detection of some Linux variants when configure is built with
-     recent GNU tools.  [Eric Covener]
+  *) Avoid an overflow on 32 bit platforms. [René Hjortskov Nielsen
+     <r... hjortskov.dk>]
 
-  *) Avoid a redundant fcntl() call in apr_file_open() where O_CLOEXEC
-     is supported.  PR 46297.  [Joe Orton]
+  *) Use AC_CHECK_SIZEOF, so as to support cross compiling. PR 56053.
+     [Mike Frysinger <vapier gentoo.org>]
 
-  *) Improve platform detection by updating config.guess and config.sub.
-     [Rainer Jung]
+  *) Add --tag=CC to libtool invocations. PR 62640. [Michael Osipov]
 
-Changes for APR 1.4.2
-
-  *) Undo a crash-bug introduced in 1.4.1 affecting some applications of 
-     the apr hash and table structures, reported to affect Subversion
-     by Bert Huijben <bert qqmail.nl>.  [Graham Leggett]
-
-Changes for APR 1.4.1
-
-  *) Win32: Properly handle the ERROR_DIRECTORY system error code.
+  *) apr_pools: Fix pool debugging output so that creation events are
+     always emitted before allocation events and subpool destruction
+     events are emitted on pool clear/destroy for proper accounting.
      [Brane Čibej]
 
-Changes for APR 1.4.0
+  *) apr_socket_listen: Allow larger listen backlog values on Windows 8+.
+     [Evgeny Kotkov <evgeny.kotkov visualsvn.com>]
 
-  *) Windows: Default build configurations assume NT or higher at run-time. 
+  *) Fixed: apr_get_oslevel() was returning APR_WIN_XP on Windows 10
 
-  *) Add apr_global_mutex_lockfile() for retrieving the file, if any,
-     associated with the mutex.  Add apr_global_mutex_name() for retrieving
-     the name of the lock mechanism used by the underlying proc mutex.
-     [Jeff Trawick]
+  *) Fix attempt to free invalid memory on exit when apr_app is used
+     on Windows. [Ivan Zhakov]
 
-  *) Add apr_socket_atreadeof to determine whether the receive part of the
-     socket has been closed by the peer.
-     [Ruediger Pluem, Mladen Turk, Joe Orton]
+  *) Fix double free on exit when apr_app is used on Windows. [Ivan Zhakov]
 
-  *) Make apr_pollset and apr_pollcb implementations using providers.
-     Added apr_pollset_create_ex and apr_pollcb_create_ex that allows
-     choosing non-default providers.
-     [Mladen Turk]
+  *) Fix a regression in apr_stat() for root path on Windows. [Ivan Zhakov]
 
-  *) Win32: Use WSAPoll as default pollset method if supported and found
-     inside winsock dll.  [Mladen Turk]
+Changes for APR 1.7.0
 
-  *) apr_temp_dir_get() now checks the TMPDIR environment variable first,
-     instead of third.  [Jim Jagielski]
+  *) apr_dir_read: [Unix] Dropped the preference of the dirread_r() flavor
+     for dirread(), because the former is both deprecated and unneeded.
+     [Yann Ylavic, William Rowe]
 
-  *) Add apr_file_sync() and apr_file_datasync() calls.  [Bojan Smojver]
+  *) apr_file_info: [Win32 only] Treat only "name surrogate" reparse points
+     as symlinks, and not other reparse tag types. PR47630
+     [Oleg Liatte <olegliatte gmail.com>]
 
-  *) apr_pollset_wakeup() on Windows: Fix core caused by closing the
-     file_socket_pipe with standard file_close. 
-     [Arsen Chaloyan, Mladen Turk]
+  *) Test %ld vs. %lld to avoid compiler emits using APR_OFF_T_FMT, in the
+     case of apparently equivilant long and long long types. [William Rowe]
 
-  *) Introduce apr_hash_do() for iterating over a hash table.  [Mladen Turk]
+  *) Recognize APPLE predefined macros as equivilant to DARWIN. [Jim Jagielski]
 
-  *) Make sure WIN32 behaves the same as posix for file-backed shared memory 
-     by removing the file on cleanup/remove.  [Mladen Turk]
+  *) Signals: Allow handling of SIGUSR2 in apr_signal_thread. [Yann Ylavic]
 
-  *) Introduce apr_pollset_wakeup() for interrupting the blocking
-     apr_pollset_poll() call.  [Mladen Turk]
+  *) Atomics: Support for 64bit ints. [Jim Jagielski]
 
-  *) Add apr_file_link() function.  PR 44841.  [Mark Heily <mark heily.com>]
+  *) Add the apr_encode_* API that implements RFC4648 and RFC7515
+     compliant BASE64, BASE64URL, BASE32, BASE32HEX and BASE16
+     encode/decode functions. [Graham Leggett]
+
+  *) rand: Use arc4random_buf() on BSD platforms and getrandom() on Linux,
+     when available. [Christian Weisgerber <naddy openbsd.org, Yann Ylavic]
+
+  *) Add apr_sockaddr_zone_set, apr_sockaddr_zone_set to set and retrieve
+     the zone for link-local IPv6 addresses.  [Joe Orton]
+
+  *) apr_sockaddr_equal: Compare link-local IPv6 addresses with different
+     zones as not equal.  [Joe Orton]
+
+  *) apr_sockaddr_ip_getbuf, apr_sockaddr_ip_get: Append "%zone" for
+     IPv6 link-local addresses.  [Joe Orton]
+
+  *) Locks: add a --disable-timedlocks config option in case users
+     encounter more platforms where it fails [Nick Kew].
+
+  *) apr_allocator, apr_pools: Add apr_allocator_page_size() and
+     apr_allocator_min_order_set() to respectively get the (system's) page size
+     in use and set the minimum allocation size for an allocator (expressed in
+     2^order pages).  [Yann Ylavic]
+
+  *) locks: provide portable implementations of timedlock()s for
+     posix-sems, sysv-sems and pthreads for those platforms that
+     lack native versions (eg: OSX/macOS). [Jim Jagielski]
+
+  *) locks: Introduce apr_{thread,proc,global}_mutex_timedlock().
+     [Yann Ylavic]
+
+Changes for APR 1.6.x and later:
+
+  *) http://svn.apache.org/viewvc/apr/apr/branches/1.6.x/CHANGES?view=markup
+
+Changes for APR 1.5.x and later:
+
+  *) http://svn.apache.org/viewvc/apr/apr/branches/1.5.x/CHANGES?view=markup
+
+Changes for APR 1.4.x and later:
+
+  *) http://svn.apache.org/viewvc/apr/apr/branches/1.4.x/CHANGES?view=markup
 
 Changes for APR 1.3.x and later:
 

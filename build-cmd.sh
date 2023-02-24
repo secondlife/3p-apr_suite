@@ -52,7 +52,7 @@ case "$AUTOBUILD_PLATFORM" in
         -t:$proj \
         -p:Configuration=Release \
         -p:Platform=$AUTOBUILD_WIN_VSPLATFORM \
-        -p:PlatformToolset=v143
+        -p:PlatformToolset=${AUTOBUILD_WIN_VSTOOLSET:-v143}
     done
 
     mkdir -p "$RELEASE_OUT_DIR" || echo "$RELEASE_OUT_DIR exists"
@@ -87,22 +87,22 @@ case "$AUTOBUILD_PLATFORM" in
     PREFIX="$STAGING_DIR"
 
     opts="-arch $AUTOBUILD_CONFIGURE_ARCH $LL_BUILD_RELEASE"
+    # per https://github.com/pyenv/pyenv/issues/1425
+    export SDKROOT="/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk"
+    export CC="clang"
+    export CFLAGS="$opts -I$SDKROOT/usr/include"
+    export CXXFLAGS="$opts"
+    export LDFLAGS="$opts"
+    export MAKEFLAGS="-j${AUTOBUILD_CPU_COUNT:-2}"
 
     pushd "$TOP_DIR/apr"
-    rm configure
-    autoreconf -fi
-    CC="clang" CFLAGS="$opts" CXXFLAGS="$opts" LDFLAGS="$opts" \
-        ./configure --prefix="$PREFIX"
+    ./configure --prefix="$PREFIX"
     make
     make install
     popd
 
     pushd "$TOP_DIR/apr-util"
-    rm configure
-    autoreconf -fi
-    CC="clang" CFLAGS="$opts" CXXFLAGS="$opts" LDFLAGS="$opts" \
-        ./configure --prefix="$PREFIX" --with-apr="$PREFIX" \
-        --with-expat="$PREFIX"
+    ./configure --prefix="$PREFIX" --with-apr="$PREFIX" --with-expat="$PREFIX"
     make
     make install
     popd
@@ -185,6 +185,8 @@ case "$AUTOBUILD_PLATFORM" in
 
     # do release builds
     pushd "$TOP_DIR/apr"
+##      rm configure || echo "configure already gone"
+##      autoreconf -fi
         LDFLAGS="$opts" CFLAGS="$opts" CXXFLAGS="$opts" \
             ./configure --prefix="$PREFIX" --libdir="$PREFIX/lib/release"
         make
@@ -192,6 +194,8 @@ case "$AUTOBUILD_PLATFORM" in
     popd
 
     pushd "$TOP_DIR/apr-iconv"
+##      rm configure || echo "configure already gone"
+##      autoreconf -fi
         # NOTE: the autotools scripts in iconv don't honor the --libdir switch so we
         # need to build to a dummy prefix and copy the files into the correct place
         mkdir "$PREFIX/iconv"
@@ -209,6 +213,8 @@ case "$AUTOBUILD_PLATFORM" in
     popd
 
     pushd "$TOP_DIR/apr-util"
+##      rm configure || echo "configure already gone"
+##      autoreconf -fi
         # the autotools can't find the expat static lib with the layout of our
         # libraries so we need to copy the file to the correct location temporarily
         cp "$PREFIX/packages/lib/release/libexpat.a" "$PREFIX/packages/lib/"

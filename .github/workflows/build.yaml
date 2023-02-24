@@ -9,6 +9,7 @@ jobs:
         include:
           - os: windows-2022
             addrsize: "32"
+    continue-on-error: true
     runs-on: ${{ matrix.os }}
     steps:
       - name: Install macOS dependencies

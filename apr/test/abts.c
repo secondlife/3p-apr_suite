@@ -106,6 +106,9 @@ abts_suite *abts_add_suite(abts_suite *suite, const char *suite_name_full)
     /* suite_name_full may be an absolute path depending on __FILE__ 
      * expansion */
     suite_name = strrchr(suite_name_full, '/');
+    if (!suite_name) {
+        suite_name = strrchr(suite_name_full, '\\');
+    }
     if (suite_name) {
         suite_name++;
     } else {
@@ -117,7 +120,7 @@ abts_suite *abts_add_suite(abts_suite *suite, const char *suite_name_full)
                                 suite_name, p - suite_name);
     }
     else {
-        subsuite->name = suite_name;
+        subsuite->name = strdup(suite_name);
     }
 
     if (list_tests) {
@@ -147,6 +150,21 @@ abts_suite *abts_add_suite(abts_suite *suite, const char *suite_name_full)
     fflush(stdout);
 
     return suite;
+}
+
+static void abts_free_suite(abts_suite *suite)
+{
+    if (suite) {
+        sub_suite *dptr, *next;
+
+        for (dptr = suite->head; dptr; dptr = next) {
+            next = dptr->next;
+            free(dptr->name);
+            free(dptr);
+        }
+
+        free(suite);
+    }
 }
 
 void abts_run_test(abts_suite *ts, test_func f, void *value)
@@ -245,7 +263,8 @@ void abts_int_nequal(abts_case *tc, const int expected, const int actual, int li
 
     tc->failed = TRUE;
     if (verbose) {
-        fprintf(stderr, "Line %d: expected <%d>, but saw <%d>\n", lineno, expected, actual);
+        fprintf(stderr, "Line %d: expected something other than <%d>, but saw <%d>\n",
+                lineno, expected, actual);
         fflush(stderr);
     }
 }
@@ -292,7 +311,8 @@ void abts_str_nequal(abts_case *tc, const char *expected, const char *actual,
 
     tc->failed = TRUE;
     if (verbose) {
-        fprintf(stderr, "Line %d: expected <%s>, but saw <%s>\n", lineno, expected, actual);
+        fprintf(stderr, "Line %d: expected something other than <%s>, but saw <%s>\n",
+                lineno, expected, actual);
         fflush(stderr);
     }
 }
@@ -425,6 +445,7 @@ int main(int argc, const char *const argv[]) {
     }
 
     rv = report(suite);
+    abts_free_suite(suite);
     return rv;
 }
        
