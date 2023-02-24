@@ -52,7 +52,7 @@ case "$AUTOBUILD_PLATFORM" in
         -t:$proj \
         -p:Configuration=Release \
         -p:Platform=$AUTOBUILD_WIN_VSPLATFORM \
-        -p:PlatformToolset=v143
+        -p:PlatformToolset=${AUTOBUILD_WIN_VSTOOLSET:-v143}
     done
 
     mkdir -p "$RELEASE_OUT_DIR" || echo "$RELEASE_OUT_DIR exists"
