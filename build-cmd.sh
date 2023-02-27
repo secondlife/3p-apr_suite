@@ -63,6 +63,9 @@ build=${AUTOBUILD_BUILD_ID:=0}
 echo "${version}.${build}" > "${STAGING_DIR}/VERSION.txt"
 
 case "$AUTOBUILD_PLATFORM" in
+# ****************************************************************************
+# Windows
+# ****************************************************************************
   windows*)
     pushd "$TOP_DIR"
     RELEASE_OUT_DIR="$STAGING_DIR/lib/release"
@@ -103,6 +106,7 @@ case "$AUTOBUILD_PLATFORM" in
     do
         build_sln "APR.sln" "Release|$AUTOBUILD_WIN_VSPLATFORM" "$proj"
     done
+    /usr/bin/find "$TOP_DIR" -name apr.h -print
     # ------------------------------- apr-util -------------------------------
     mkdir -p "$STAGING_DIR/apr-util-build"
     cd "$STAGING_DIR/apr-util-build"
@@ -158,6 +162,9 @@ case "$AUTOBUILD_PLATFORM" in
     popd
   ;;
 
+# ****************************************************************************
+# Mac
+# ****************************************************************************
   darwin*)
     PREFIX="$STAGING_DIR"
 
@@ -253,6 +260,9 @@ case "$AUTOBUILD_PLATFORM" in
         "$lib"
   ;;
 
+# ****************************************************************************
+# Linux
+# ****************************************************************************
   linux*)
     PREFIX="$STAGING_DIR"
 
