@@ -69,8 +69,18 @@ case "$AUTOBUILD_PLATFORM" in
     # have to use different CMake directories for APR build vs. APR-UTIL build
     mkdir -p "$STAGING_DIR/apr-build"
     pushd "$STAGING_DIR/apr-build"
-    cmake -G "$AUTOBUILD_WIN_CMAKE_GEN" -A "$AUTOBUILD_WIN_VSPLATFORM" \
-          "$(cygpath -m "$TOP_DIR/apr")"
+    logfile="CMakeFiles/CMakeOutput.log"
+    if ! cmake -G "$AUTOBUILD_WIN_CMAKE_GEN" -A "$AUTOBUILD_WIN_VSPLATFORM" \
+         "$(cygpath -m "$TOP_DIR/apr")"
+    then
+        set +x
+        if [[ -r "$logfile" ]]
+        then
+            python -c "print(r''' $logfile '''.center(72, '='))"
+            cat "$logfile"
+        fi
+        exit 1
+    fi
     # output is APR.sln
     for proj in apr-1 libapr-1
     do
@@ -78,8 +88,17 @@ case "$AUTOBUILD_PLATFORM" in
     done
     mkdir -p "$STAGING_DIR/apr-util-build"
     cd "$STAGING_DIR/apr-util-build"
-    cmake -G "$AUTOBUILD_WIN_CMAKE_GEN" -A "$AUTOBUILD_WIN_VSPLATFORM" \
+    if ! cmake -G "$AUTOBUILD_WIN_CMAKE_GEN" -A "$AUTOBUILD_WIN_VSPLATFORM" \
           "$(cygpath -m "$TOP_DIR/apr-util")"
+    then
+        set +x
+        if [[ -r "$logfile" ]]
+        then
+            python -c "print(r''' $logfile '''.center(72, '='))"
+            cat "$logfile"
+        fi
+        exit 1
+    fi
     # output is APR-Util.sln
     for proj in aprutil libaprutil
     do
