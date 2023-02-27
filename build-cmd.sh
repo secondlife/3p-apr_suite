@@ -25,6 +25,9 @@ pushd "$(dirname "$0")"
 TOP_DIR="$(pwd)"
 popd
 
+EXPAT_LIBRARIES="$STAGING_DIR/packages/lib/release"
+EXPAT_INCLUDE_DIRS="$STAGING_DIR/packages/include/expat"
+
 # load autobuild provided shell functions and variables
 source_environment_tempfile="$STAGING_DIR/source_environment.sh"
 "$autobuild" source_environment > "$source_environment_tempfile"
@@ -66,7 +69,18 @@ case "$AUTOBUILD_PLATFORM" in
 
     load_vsvars
 
+    # Set up EXPAT external dependency from autobuild package
+    APR_EXPAT_DIR="$TOP_DIR/apr-util/xml/expat"
+    cp "$EXPAT_INCLUDE_DIRS/expat.h" "$APR_EXPAT_DIR"
+    cp "$EXPAT_INCLUDE_DIRS/expat_external.h" "$APR_EXPAT_DIR"
+    # It's perfectly fine finding $EXPAT_LIBRARIES/libexpatMT.lib, but not
+    # opening it for some reason. And when it does work cmake wants
+    # libexpatMT.lib, but in such case VS wants libexpatMT.lib.lib
+    cp "$EXPAT_LIBRARIES/libexpatMT.lib" "$APR_EXPAT_DIR"
+    cp "$APR_EXPAT_DIR/libexpatMT.lib" "$APR_EXPAT_DIR/libexpatMT"
+
     # have to use different CMake directories for APR build vs. APR-UTIL build
+    # --------------------------------- apr ----------------------------------
     mkdir -p "$STAGING_DIR/apr-build"
     pushd "$STAGING_DIR/apr-build"
     logfile="CMakeFiles/CMakeOutput.log"
@@ -86,10 +100,16 @@ case "$AUTOBUILD_PLATFORM" in
     do
         build_sln "APR.sln" "Release|$AUTOBUILD_WIN_VSPLATFORM" "$proj"
     done
+    # ------------------------------- apr-util -------------------------------
     mkdir -p "$STAGING_DIR/apr-util-build"
     cd "$STAGING_DIR/apr-util-build"
-    if ! cmake -G "$AUTOBUILD_WIN_CMAKE_GEN" -A "$AUTOBUILD_WIN_VSPLATFORM" \
-          "$(cygpath -m "$TOP_DIR/apr-util")"
+    if ! cmake -G "$AUTOBUILD_WIN_CMAKE_GEN" \
+         -A "$AUTOBUILD_WIN_VSPLATFORM" \
+         -DCMAKE_INSTALL_PREFIX="$TOP_DIR/apr" \
+         -DEXPAT_INCLUDE_DIR:PATH="$APR_EXPAT_DIR" \
+         -DEXPAT_LIBRARY:FILEPATH="$APR_EXPAT_DIR/libexpatMT" \
+         -DCMAKE_C_FLAGS="$LL_BUILD_RELEASE" \
+         "$(cygpath -m "$TOP_DIR/apr-util")"
     then
         set +x
         if [[ -r "$logfile" ]]
@@ -105,6 +125,7 @@ case "$AUTOBUILD_PLATFORM" in
         build_sln "APR-Util.sln" "Release|$AUTOBUILD_WIN_VSPLATFORM" "$proj"
     done
     popd
+    # ------------------------------------------------------------------------
 
     mkdir -p "$RELEASE_OUT_DIR" || echo "$RELEASE_OUT_DIR exists"
 
