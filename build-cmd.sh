@@ -69,7 +69,8 @@ case "$AUTOBUILD_PLATFORM" in
     # have to use different CMake directories for APR build vs. APR-UTIL build
     mkdir -p "$STAGING_DIR/apr-build"
     pushd "$STAGING_DIR/apr-build"
-    cmake -G "$AUTOBUILD_WIN_CMAKE_GEN" -A "$AUTOBUILD_WIN_VSPLATFORM" "$TOP_DIR/apr"
+    cmake -G "$AUTOBUILD_WIN_CMAKE_GEN" -A "$AUTOBUILD_WIN_VSPLATFORM" \
+          "$(cygpath -m "$TOP_DIR/apr")"
     # output is APR.sln
     for proj in apr-1 libapr-1
     do
@@ -77,7 +78,8 @@ case "$AUTOBUILD_PLATFORM" in
     done
     mkdir -p "$STAGING_DIR/apr-util-build"
     cd "$STAGING_DIR/apr-util-build"
-    cmake -G "$AUTOBUILD_WIN_CMAKE_GEN" -A "$AUTOBUILD_WIN_VSPLATFORM" "$TOP_DIR/apr-util"
+    cmake -G "$AUTOBUILD_WIN_CMAKE_GEN" -A "$AUTOBUILD_WIN_VSPLATFORM" \
+          "$(cygpath -m "$TOP_DIR/apr-util")"
     # output is APR-Util.sln
     for proj in aprutil libaprutil
     do
