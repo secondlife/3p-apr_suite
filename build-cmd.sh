@@ -84,7 +84,10 @@ case "$AUTOBUILD_PLATFORM" in
     mkdir -p "$STAGING_DIR/apr-build"
     pushd "$STAGING_DIR/apr-build"
     logfile="CMakeFiles/CMakeOutput.log"
-    if ! cmake -G "$AUTOBUILD_WIN_CMAKE_GEN" -A "$AUTOBUILD_WIN_VSPLATFORM" \
+    if ! cmake -G "$AUTOBUILD_WIN_CMAKE_GEN" \
+         -A "$AUTOBUILD_WIN_VSPLATFORM" \
+         -DCMAKE_INSTALL_PREFIX="$(cygpath -m "$TOP_DIR/apr")" \
+         -DCMAKE_C_FLAGS="$LL_BUILD_RELEASE" \
          "$(cygpath -m "$TOP_DIR/apr")"
     then
         set +x
@@ -105,9 +108,9 @@ case "$AUTOBUILD_PLATFORM" in
     cd "$STAGING_DIR/apr-util-build"
     if ! cmake -G "$AUTOBUILD_WIN_CMAKE_GEN" \
          -A "$AUTOBUILD_WIN_VSPLATFORM" \
-         -DCMAKE_INSTALL_PREFIX="$TOP_DIR/apr" \
-         -DEXPAT_INCLUDE_DIR:PATH="$APR_EXPAT_DIR" \
-         -DEXPAT_LIBRARY:FILEPATH="$APR_EXPAT_DIR/libexpatMT" \
+         -DCMAKE_INSTALL_PREFIX="$(cygpath -m "$TOP_DIR/apr")" \
+         -DEXPAT_INCLUDE_DIR:PATH="$(cygpath -m "$APR_EXPAT_DIR")" \
+         -DEXPAT_LIBRARY:FILEPATH="$(cygpath -m "$APR_EXPAT_DIR/libexpatMT")" \
          -DCMAKE_C_FLAGS="$LL_BUILD_RELEASE" \
          "$(cygpath -m "$TOP_DIR/apr-util")"
     then
