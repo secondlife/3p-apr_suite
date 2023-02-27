@@ -27,6 +27,25 @@ source_environment_tempfile="$STAGING_DIR/source_environment.sh"
 "$autobuild" source_environment > "$source_environment_tempfile"
 . "$source_environment_tempfile"
 
+# Use msbuild.exe instead of devenv.com
+build_sln() {
+    local solution=$1
+    local config=$2
+    local proj="${3:-}"
+    local toolset="${AUTOBUILD_WIN_VSTOOLSET:-v143}"
+
+    # e.g. config = "Release|$AUTOBUILD_WIN_VSPLATFORM" per devenv.com convention
+    local -a confparts
+    IFS="|" read -ra confparts <<< "$config"
+
+    msbuild.exe \
+        "$(cygpath -w "$solution")" \
+        ${proj:+-t:"$proj"} \
+        -p:Configuration="${confparts[0]}" \
+        -p:Platform="${confparts[1]}" \
+        -p:PlatformToolset=$toolset
+}
+
 # extract APR version into VERSION.txt
 APR_INCLUDE_DIR="../apr/include"
 # will match -- #<whitespace>define<whitespace>APR_MAJOR_VERSION<whitespace>number  future proofed :)
@@ -44,16 +63,18 @@ case "$AUTOBUILD_PLATFORM" in
 
     load_vsvars
 
-    which nmake
-
-    for proj in apr aprutil apriconv xml libapr libaprutil libapriconv; do
-      msbuild.exe \
-        "$(cygpath -w apr-util/aprutil.sln)" \
-        -t:$proj \
-        -p:Configuration=Release \
-        -p:Platform=$AUTOBUILD_WIN_VSPLATFORM \
-        -p:PlatformToolset=${AUTOBUILD_WIN_VSTOOLSET:-v143}
+    pushd "$STAGING_DIR"
+    cmake -G "$AUTOBUILD_WIN_CMAKE_GEN" -A "$AUTOBUILD_WIN_VSPLATFORM" "$TOP_DIR/apr"
+    for proj in apr-1 libapr-1
+    do
+        build_sln "APR.sln" "Release|$AUTOBUILD_WIN_VSPLATFORM" "$proj"
     done
+    cmake -G "$AUTOBUILD_WIN_CMAKE_GEN" -A "$AUTOBUILD_WIN_VSPLATFORM" "$TOP_DIR/apr-util"
+    for proj in aprutil libaprutil
+    do
+        build_sln "APR-Util.sln" "Release|$AUTOBUILD_WIN_VSPLATFORM" "$proj"
+    done
+    popd
 
     mkdir -p "$RELEASE_OUT_DIR" || echo "$RELEASE_OUT_DIR exists"
 
