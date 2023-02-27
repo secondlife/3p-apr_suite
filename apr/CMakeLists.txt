@@ -166,6 +166,7 @@ SET(APR_SOURCES
   misc/win32/charset.c
   misc/win32/env.c
   misc/win32/internal.c
+  misc/win32/log.c
   misc/win32/misc.c
   misc/win32/rand.c
   misc/win32/start.c
