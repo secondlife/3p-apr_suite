@@ -20,7 +20,10 @@ else
 fi
 
 STAGING_DIR="$(pwd)"
-TOP_DIR="$(dirname "$0")"
+# Get TOP_DIR as an absolute path, in case `dirname $0` is relative.
+pushd "$(dirname "$0")"
+TOP_DIR="$(pwd)"
+popd
 
 # load autobuild provided shell functions and variables
 source_environment_tempfile="$STAGING_DIR/source_environment.sh"
