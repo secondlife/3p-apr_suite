@@ -7,8 +7,6 @@ set -e
 # complain about unset env variables
 set -u
 
-APR_INCLUDE_DIR="apr/include"
-
 if [ -z "$AUTOBUILD" ] ; then
     exit 1
 fi
@@ -25,8 +23,12 @@ pushd "$(dirname "$0")"
 TOP_DIR="$(pwd)"
 popd
 
-EXPAT_LIBRARIES="$STAGING_DIR/packages/lib/release"
-EXPAT_INCLUDE_DIRS="$STAGING_DIR/packages/include/expat"
+PKG_LIB="$STAGING_DIR/packages/lib"
+PKG_INCLUDE="$STAGING_DIR/packages/include"
+EXPAT_LIBRARIES="$PKG_LIB/release"
+EXPAT_INCLUDE_DIRS="$PKG_INCLUDE/expat"
+OPENSSL_LIBRARIES="$PKG_LIB/release"
+OPENSSL_INCLUDE_DIRS="$PKG_INCLUDE/openssl"
 
 # load autobuild provided shell functions and variables
 source_environment_tempfile="$STAGING_DIR/source_environment.sh"
@@ -53,7 +55,7 @@ build_sln() {
 }
 
 # extract APR version into VERSION.txt
-APR_INCLUDE_DIR="../apr/include"
+APR_INCLUDE_DIR="$TOP_DIR/apr/include"
 # will match -- #<whitespace>define<whitespace>APR_MAJOR_VERSION<whitespace>number  future proofed :)
 major_version="$(sed -n -E 's/#[[:space:]]*define[[:space:]]+APR_MAJOR_VERSION[[:space:]]+([0-9]+)/\1/p' "${APR_INCLUDE_DIR}/apr_version.h")"
 minor_version="$(sed -n -E 's/#[[:space:]]*define[[:space:]]+APR_MINOR_VERSION[[:space:]]+([0-9]+)/\1/p' "${APR_INCLUDE_DIR}/apr_version.h")"
@@ -106,7 +108,9 @@ case "$AUTOBUILD_PLATFORM" in
     do
         build_sln "APR.sln" "Release|$AUTOBUILD_WIN_VSPLATFORM" "$proj"
     done
-    /usr/bin/find "$TOP_DIR" -name apr.h -print
+    # The above build generated apr.h into the current directory - put it in
+    # APR_INCLUDE_DIR
+    cp -v apr.h "$APR_INCLUDE_DIR"
     # ------------------------------- apr-util -------------------------------
     mkdir -p "$STAGING_DIR/apr-util-build"
     cd "$STAGING_DIR/apr-util-build"
@@ -115,6 +119,7 @@ case "$AUTOBUILD_PLATFORM" in
          -DCMAKE_INSTALL_PREFIX="$(cygpath -m "$TOP_DIR/apr")" \
          -DEXPAT_INCLUDE_DIR:PATH="$(cygpath -m "$APR_EXPAT_DIR")" \
          -DEXPAT_LIBRARY:FILEPATH="$(cygpath -m "$APR_EXPAT_DIR/libexpatMT")" \
+         -DOPENSSL_ROOT_DIR:PATH="$(cygpath -m "$OPENSSL_LIBRARIES")" \
          -DCMAKE_C_FLAGS="$LL_BUILD_RELEASE" \
          "$(cygpath -m "$TOP_DIR/apr-util")"
     then
