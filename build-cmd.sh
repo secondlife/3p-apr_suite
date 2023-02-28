@@ -83,6 +83,7 @@ case "$AUTOBUILD_PLATFORM" in
     # have to use different CMake directories for APR build vs. APR-UTIL build
     # --------------------------------- apr ----------------------------------
     APR_BUILD_DIR="$STAGING_DIR/apr-build"
+    APR_RELEASE_DIR="$APR_BUILD_DIR/Release"
     mkdir -p "$APR_BUILD_DIR"
     pushd "$APR_BUILD_DIR"
     logfile="CMakeFiles/CMakeOutput.log"
@@ -109,12 +110,14 @@ case "$AUTOBUILD_PLATFORM" in
     # APR_INCLUDE_DIR
     cp -v apr.h "$APR_INCLUDE_DIR"
     # ------------------------------- apr-util -------------------------------
-    mkdir -p "$STAGING_DIR/apr-util-build"
-    cd "$STAGING_DIR/apr-util-build"
+    APR_UTIL_BUILD_DIR="$STAGING_DIR/apr-util-build"
+    APR_UTIL_RELEASE_DIR="$APR_UTIL_BUILD_DIR/Release"
+    mkdir -p "$APR_UTIL_BUILD_DIR"
+    cd "$APR_UTIL_BUILD_DIR"
     if ! cmake -G "$AUTOBUILD_WIN_CMAKE_GEN" \
          -A "$AUTOBUILD_WIN_VSPLATFORM" \
          -DCMAKE_INSTALL_PREFIX="$(cygpath -m "$TOP_DIR/apr")" \
-         -DAPR_LIBRARIES:FILEPATH="$(cygpath -m "$APR_BUILD_DIR/Release/libapr-1.lib")" \
+         -DAPR_LIBRARIES:FILEPATH="$(cygpath -m "$APR_RELEASE_DIR/libapr-1.lib")" \
          -DEXPAT_INCLUDE_DIR:PATH="$(cygpath -m "$APR_EXPAT_DIR")" \
          -DEXPAT_LIBRARY:FILEPATH="$(cygpath -m "$APR_EXPAT_DIR/libexpatMT.lib")" \
          -DOPENSSL_ROOT_DIR:PATH="$(cygpath -m "$OPENSSL_LIBRARIES")" \
@@ -139,28 +142,20 @@ case "$AUTOBUILD_PLATFORM" in
 
     mkdir -p "$RELEASE_OUT_DIR" || echo "$RELEASE_OUT_DIR exists"
 
-    if [ "$AUTOBUILD_ADDRSIZE" = 32 ]
-      then 
-        bitdir=""
-      else
-        bitdir="/x64"
-    fi
-    cp "apr$bitdir/LibR/apr-1.lib" "$RELEASE_OUT_DIR"
-    cp "apr-util$bitdir/LibR/aprutil-1.lib" "$RELEASE_OUT_DIR"
-    cp "apr-iconv$bitdir/LibR/apriconv-1.lib" "$RELEASE_OUT_DIR"
-    cp "apr$bitdir/Release/libapr-1."{lib,dll} "$RELEASE_OUT_DIR"
-    cp "apr-iconv$bitdir/Release/libapriconv-1."{lib,dll} "$RELEASE_OUT_DIR"
-    cp "apr-util$bitdir/Release/libaprutil-1."{lib,dll} "$RELEASE_OUT_DIR"
+    cp -v "$APR_RELEASE_DIR"/{apr-1.lib,libapr-1.{lib,dll}} "$RELEASE_OUT_DIR"
+    cp -v "$APR_UTIL_RELEASE_DIR"/{aprutil-1.lib,libaprutil-1.{lib,dll}} "$RELEASE_OUT_DIR"
+##  cp "apr-iconv$bitdir/LibR/apriconv-1.lib" "$RELEASE_OUT_DIR"
+##  cp "apr-iconv$bitdir/Release/libapriconv-1."{lib,dll} "$RELEASE_OUT_DIR"
 
     INCLUDE_DIR="$STAGING_DIR/include/apr-1"
     mkdir -p "$INCLUDE_DIR"      || echo "$INCLUDE_DIR exists"
     cp apr/include/*.h "$INCLUDE_DIR"
-    cp apr-iconv/include/*.h "$INCLUDE_DIR"
+##  cp apr-iconv/include/*.h "$INCLUDE_DIR"
     cp apr-util/include/*.h "$INCLUDE_DIR"
-    mkdir "$INCLUDE_DIR/arch"    || echo "$INCLUDE_DIR/arch exists"
+    mkdir -p "$INCLUDE_DIR/arch"    || echo "$INCLUDE_DIR/arch exists"
     cp apr/include/arch/apr_private_common.h "$INCLUDE_DIR/arch"
     cp -R "apr/include/arch/win32" "$INCLUDE_DIR/arch"
-    mkdir "$INCLUDE_DIR/private" || echo "$INCLUDE_DIR/private exists"
+    mkdir -p "$INCLUDE_DIR/private" || echo "$INCLUDE_DIR/private exists"
     cp -R apr-util/include/private "$INCLUDE_DIR"
     popd
   ;;
