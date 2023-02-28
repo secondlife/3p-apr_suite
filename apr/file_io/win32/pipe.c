@@ -170,7 +170,8 @@ APR_DECLARE(apr_status_t) apr_file_pipe_create_pools(apr_file_t **in,
         pos = apr_snprintf(name, sizeof name, FMT_PIPE_NAME, pid, id++);
         apr_escape_hex(name + pos, rand, sizeof rand, 0, NULL);
 
-        (*in)->filehand = CreateNamedPipe(name,
+        /* Don't bother with utf8_to_unicode_path(): FMT_PIPE_NAME is ASCII */
+        (*in)->filehand = CreateNamedPipeA(name,
                                           dwOpenMode,
                                           dwPipeMode,
                                           1,            /* nMaxInstances,   */
@@ -195,7 +196,8 @@ APR_DECLARE(apr_status_t) apr_file_pipe_create_pools(apr_file_t **in,
             (*out)->timeout = 0;
         }
 
-        (*out)->filehand = CreateFile(name,
+        /* Don't bother with utf8_to_unicode_path(): FMT_PIPE_NAME is ASCII */
+        (*out)->filehand = CreateFileA(name,
                                       GENERIC_WRITE,   /* access mode             */
                                       0,               /* share mode              */
                                       &sa,             /* Security attributes     */

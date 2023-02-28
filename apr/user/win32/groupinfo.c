@@ -49,14 +49,14 @@ APR_DECLARE(apr_status_t) apr_gid_get(apr_gid_t *gid,
     }
     /* Get nothing on the first pass ... need to size the sid buffer 
      */
-    rv = LookupAccountName(domain, groupname, domain, &sidlen, 
+    rv = LookupAccountNameA(domain, groupname, domain, &sidlen, 
                            anydomain, &domlen, &sidtype);
     if (sidlen) {
         /* Give it back on the second pass
          */
         *gid = apr_palloc(p, sidlen);
         domlen = sizeof(anydomain);
-        rv = LookupAccountName(domain, groupname, *gid, &sidlen, 
+        rv = LookupAccountNameA(domain, groupname, *gid, &sidlen, 
                                anydomain, &domlen, &sidtype);
     }
     if (!sidlen || !rv) {
@@ -76,7 +76,7 @@ APR_DECLARE(apr_status_t) apr_gid_name_get(char **groupname, apr_gid_t groupid, 
     DWORD cbname = sizeof(name), cbdomain = sizeof(domain);
     if (!groupid)
         return APR_EINVAL;
-    if (!LookupAccountSid(NULL, groupid, name, &cbname, domain, &cbdomain, &type))
+    if (!LookupAccountSidA(NULL, groupid, name, &cbname, domain, &cbdomain, &type))
         return apr_get_os_error();
     if (type != SidTypeGroup && type != SidTypeWellKnownGroup 
                              && type != SidTypeAlias)

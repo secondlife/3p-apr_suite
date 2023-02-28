@@ -77,7 +77,7 @@ apr_status_t filepath_root_test(char *path, apr_pool_t *p)
     }
     else
 #endif
-        rv = GetDriveType(path);
+        rv = GetDriveTypeA(path);
 
     if (rv == DRIVE_UNKNOWN || rv == DRIVE_NO_ROOT_DIR)
         return APR_EBADPATH;
