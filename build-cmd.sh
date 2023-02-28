@@ -78,11 +78,7 @@ case "$AUTOBUILD_PLATFORM" in
     APR_EXPAT_DIR="$TOP_DIR/apr-util/xml/expat"
     cp "$EXPAT_INCLUDE_DIRS/expat.h" "$APR_EXPAT_DIR"
     cp "$EXPAT_INCLUDE_DIRS/expat_external.h" "$APR_EXPAT_DIR"
-    # It's perfectly fine finding $EXPAT_LIBRARIES/libexpatMT.lib, but not
-    # opening it for some reason. And when it does work cmake wants
-    # libexpatMT.lib, but in such case VS wants libexpatMT.lib.lib
     cp "$EXPAT_LIBRARIES/libexpatMT.lib" "$APR_EXPAT_DIR"
-    cp "$APR_EXPAT_DIR/libexpatMT.lib" "$APR_EXPAT_DIR/libexpatMT"
 
     # have to use different CMake directories for APR build vs. APR-UTIL build
     # --------------------------------- apr ----------------------------------
@@ -120,7 +116,7 @@ case "$AUTOBUILD_PLATFORM" in
          -DCMAKE_INSTALL_PREFIX="$(cygpath -m "$TOP_DIR/apr")" \
          -DAPR_LIBRARIES:FILEPATH="$(cygpath -m "$APR_BUILD_DIR/Release/libapr-1.lib")" \
          -DEXPAT_INCLUDE_DIR:PATH="$(cygpath -m "$APR_EXPAT_DIR")" \
-         -DEXPAT_LIBRARY:FILEPATH="$(cygpath -m "$APR_EXPAT_DIR/libexpatMT")" \
+         -DEXPAT_LIBRARY:FILEPATH="$(cygpath -m "$APR_EXPAT_DIR/libexpatMT.lib")" \
          -DOPENSSL_ROOT_DIR:PATH="$(cygpath -m "$OPENSSL_LIBRARIES")" \
          -DCMAKE_C_FLAGS="$LL_BUILD_RELEASE" \
          "$(cygpath -m "$TOP_DIR/apr-util")"
@@ -134,7 +130,6 @@ case "$AUTOBUILD_PLATFORM" in
         exit 1
     fi
     # output is APR-Util.sln
-    /usr/bin/find "$TOP_DIR" -name libexpatMT.obj -print
     for proj in aprutil-1 libaprutil-1
     do
         build_sln "APR-Util.sln" "Release|$AUTOBUILD_WIN_VSPLATFORM" "$proj"
