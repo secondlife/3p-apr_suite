@@ -112,7 +112,6 @@ case "$AUTOBUILD_PLATFORM" in
     # The above build generated apr.h into the current directory - put it in
     # APR_INCLUDE_DIR
     cp -v apr.h "$APR_INCLUDE_DIR"
-    /usr/bin/find "$TOP_DIR" -name libapr-1.lib -print
     # ------------------------------- apr-util -------------------------------
     mkdir -p "$STAGING_DIR/apr-util-build"
     cd "$STAGING_DIR/apr-util-build"
@@ -135,6 +134,7 @@ case "$AUTOBUILD_PLATFORM" in
         exit 1
     fi
     # output is APR-Util.sln
+    /usr/bin/find "$TOP_DIR" -name libexpatMT.obj -print
     for proj in aprutil-1 libaprutil-1
     do
         build_sln "APR-Util.sln" "Release|$AUTOBUILD_WIN_VSPLATFORM" "$proj"
