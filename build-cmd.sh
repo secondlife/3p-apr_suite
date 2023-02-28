@@ -135,7 +135,7 @@ case "$AUTOBUILD_PLATFORM" in
         exit 1
     fi
     # output is APR-Util.sln
-    for proj in aprutil libaprutil
+    for proj in aprutil-1 libaprutil-1
     do
         build_sln "APR-Util.sln" "Release|$AUTOBUILD_WIN_VSPLATFORM" "$proj"
     done
