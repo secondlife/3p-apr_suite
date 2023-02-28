@@ -111,6 +111,7 @@ case "$AUTOBUILD_PLATFORM" in
     # The above build generated apr.h into the current directory - put it in
     # APR_INCLUDE_DIR
     cp -v apr.h "$APR_INCLUDE_DIR"
+    /usr/bin/find "$TOP_DIR" -name libapr-1.lib -print
     # ------------------------------- apr-util -------------------------------
     mkdir -p "$STAGING_DIR/apr-util-build"
     cd "$STAGING_DIR/apr-util-build"
