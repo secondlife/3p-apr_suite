@@ -86,8 +86,9 @@ case "$AUTOBUILD_PLATFORM" in
 
     # have to use different CMake directories for APR build vs. APR-UTIL build
     # --------------------------------- apr ----------------------------------
-    mkdir -p "$STAGING_DIR/apr-build"
-    pushd "$STAGING_DIR/apr-build"
+    APR_BUILD_DIR="$STAGING_DIR/apr-build"
+    mkdir -p "$APR_BUILD_DIR"
+    pushd "$APR_BUILD_DIR"
     logfile="CMakeFiles/CMakeOutput.log"
     if ! cmake -G "$AUTOBUILD_WIN_CMAKE_GEN" \
          -A "$AUTOBUILD_WIN_VSPLATFORM" \
@@ -118,6 +119,7 @@ case "$AUTOBUILD_PLATFORM" in
     if ! cmake -G "$AUTOBUILD_WIN_CMAKE_GEN" \
          -A "$AUTOBUILD_WIN_VSPLATFORM" \
          -DCMAKE_INSTALL_PREFIX="$(cygpath -m "$TOP_DIR/apr")" \
+         -DAPR_LIBRARIES:FILEPATH="$(cygpath -m "$APR_BUILD_DIR/Release/libapr-1.lib")" \
          -DEXPAT_INCLUDE_DIR:PATH="$(cygpath -m "$APR_EXPAT_DIR")" \
          -DEXPAT_LIBRARY:FILEPATH="$(cygpath -m "$APR_EXPAT_DIR/libexpatMT")" \
          -DOPENSSL_ROOT_DIR:PATH="$(cygpath -m "$OPENSSL_LIBRARIES")" \
@@ -289,7 +291,7 @@ case "$AUTOBUILD_PLATFORM" in
 ##      autoreconf -fi
         # NOTE: the autotools scripts in iconv don't honor the --libdir switch so we
         # need to build to a dummy prefix and copy the files into the correct place
-        mkdir "$PREFIX/iconv"
+        mkdir -p "$PREFIX/iconv"
         LDFLAGS="$opts" CFLAGS="$opts" CXXFLAGS="$opts" \
             ./configure --prefix="$PREFIX/iconv" --with-apr="../apr"
         make
@@ -312,7 +314,7 @@ case "$AUTOBUILD_PLATFORM" in
 
         # the autotools for apr-util don't honor the --libdir switch so we
         # need to build to a dummy prefix and copy the files into the correct place
-        mkdir "$PREFIX/util"
+        mkdir -p "$PREFIX/util"
         LDFLAGS="$opts" CFLAGS="$opts" CXXFLAGS="$opts" \
             ./configure --prefix="$PREFIX/util" \
             --with-apr="../apr" \
