@@ -82,7 +82,7 @@ case "$AUTOBUILD_PLATFORM" in
 
     # have to use different CMake directories for APR build vs. APR-UTIL build
     # --------------------------------- apr ----------------------------------
-    APR_BUILD_DIR="$STAGING_DIR/apr-build"
+    APR_BUILD_DIR="$STAGING_DIR/apr-build$AUTOBUILD_ADDRSIZE"
     APR_RELEASE_DIR="$APR_BUILD_DIR/Release"
     mkdir -p "$APR_BUILD_DIR"
     pushd "$APR_BUILD_DIR"
@@ -110,7 +110,7 @@ case "$AUTOBUILD_PLATFORM" in
     # APR_INCLUDE_DIR
     cp -v apr.h "$APR_INCLUDE_DIR"
     # ------------------------------- apr-util -------------------------------
-    APR_UTIL_BUILD_DIR="$STAGING_DIR/apr-util-build"
+    APR_UTIL_BUILD_DIR="$STAGING_DIR/apr-util-build$AUTOBUILD_ADDRSIZE"
     APR_UTIL_RELEASE_DIR="$APR_UTIL_BUILD_DIR/Release"
     mkdir -p "$APR_UTIL_BUILD_DIR"
     cd "$APR_UTIL_BUILD_DIR"
