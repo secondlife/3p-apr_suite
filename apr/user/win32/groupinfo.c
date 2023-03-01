@@ -18,6 +18,7 @@
 #include "apr_portable.h"
 #include "apr_user.h"
 #include "apr_private.h"
+#include "apr_arch_utf8.h"
 #if APR_HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
