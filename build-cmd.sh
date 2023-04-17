@@ -30,6 +30,9 @@ EXPAT_INCLUDE_DIRS="$PKG_INCLUDE/expat"
 OPENSSL_LIBRARIES="$PKG_LIB/release"
 OPENSSL_INCLUDE_DIRS="$PKG_INCLUDE/openssl"
 
+# remove_switch
+source "$(dirname "$AUTOBUILD_VARIABLES_FILE")/convenience"
+
 # load autobuild provided shell functions and variables
 source_environment_tempfile="$STAGING_DIR/source_environment.sh"
 "$autobuild" source_environment > "$source_environment_tempfile"
@@ -170,7 +173,7 @@ case "$AUTOBUILD_PLATFORM" in
     # per https://github.com/pyenv/pyenv/issues/1425
     export SDKROOT="/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk"
     export CC="clang"
-    export CFLAGS="$opts -I$SDKROOT/usr/include"
+    export CFLAGS="$(remove_switch -std=c++17 $opts) -I$SDKROOT/usr/include"
     export CXXFLAGS="$opts"
     export LDFLAGS="$opts"
     export MAKEFLAGS="-j${AUTOBUILD_CPU_COUNT:-2}"
