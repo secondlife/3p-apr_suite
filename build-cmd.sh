@@ -170,12 +170,13 @@ case "$AUTOBUILD_PLATFORM" in
     PREFIX="$STAGING_DIR"
 
     opts="-arch $AUTOBUILD_CONFIGURE_ARCH $LL_BUILD_RELEASE"
+    plainopts="$(remove_switch -std=c++17 $opts)"
     # per https://github.com/pyenv/pyenv/issues/1425
     export SDKROOT="/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk"
     export CC="clang"
-    export CFLAGS="$(remove_switch -std=c++17 $opts) -I$SDKROOT/usr/include"
+    export CFLAGS="$plainopts -I$SDKROOT/usr/include"
     export CXXFLAGS="$opts"
-    export LDFLAGS="$opts"
+    export LDFLAGS="$plainopts"
     export MAKEFLAGS="-j${AUTOBUILD_CPU_COUNT:-2}"
 
     pushd "$TOP_DIR/apr"
