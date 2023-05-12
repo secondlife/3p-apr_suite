@@ -30,7 +30,7 @@ EXPAT_INCLUDE_DIRS="$PKG_INCLUDE/expat"
 OPENSSL_LIBRARIES="$PKG_LIB/release"
 OPENSSL_INCLUDE_DIRS="$PKG_INCLUDE/openssl"
 
-# remove_switch
+# remove_cxxstd
 source "$(dirname "$AUTOBUILD_VARIABLES_FILE")/convenience"
 
 # load autobuild provided shell functions and variables
@@ -170,7 +170,7 @@ case "$AUTOBUILD_PLATFORM" in
     PREFIX="$STAGING_DIR"
 
     opts="-arch $AUTOBUILD_CONFIGURE_ARCH $LL_BUILD_RELEASE"
-    plainopts="$(remove_switch -std=c++17 $opts)"
+    plainopts="$(remove_cxxstd $opts)"
     # per https://github.com/pyenv/pyenv/issues/1425
     export SDKROOT="/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk"
     export CC="clang"
