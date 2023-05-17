@@ -1,6 +1,5 @@
 <?xml version="1.0" ?>
-<llsd>
-<map>
+<llsd><map>
     <key>installables</key>
     <map>
       <key>expat</key>
@@ -34,11 +33,11 @@
             <key>archive</key>
             <map>
               <key>hash</key>
-              <string>97ff809e91320139c8b2f095b34ec526a2390bf9</string>
+              <string>b85526ca80b6a7e73c7870285cf68d568f742095</string>
               <key>hash_algorithm</key>
               <string>sha1</string>
               <key>url</key>
-              <string>https://github.com/secondlife/3p-expat/releases/download/v2.1.1/expat-2.1.1.71e5d8b-darwin64-71e5d8b.tar.zst</string>
+              <string>https://github.com/secondlife/3p-expat/releases/download/v2.1.1.1f36d02/expat-2.1.1.1f36d02-darwin64-1f36d02.tar.zst</string>
             </map>
             <key>name</key>
             <string>darwin64</string>
@@ -60,11 +59,11 @@
             <key>archive</key>
             <map>
               <key>hash</key>
-              <string>b661a2fcddc3e27779d1ac4f3e2cd7a831c954e2</string>
+              <string>4cd82e2dec06ddff19e9b3dc0254f2593ec80452</string>
               <key>hash_algorithm</key>
               <string>sha1</string>
               <key>url</key>
-              <string>https://github.com/secondlife/3p-expat/releases/download/v2.1.1/expat-2.1.1.71e5d8b-linux64-71e5d8b.tar.zst</string>
+              <string>https://github.com/secondlife/3p-expat/releases/download/v2.1.1.1f36d02/expat-2.1.1.1f36d02-linux64-1f36d02.tar.zst</string>
             </map>
             <key>name</key>
             <string>linux64</string>
@@ -74,11 +73,11 @@
             <key>archive</key>
             <map>
               <key>hash</key>
-              <string>03efdf67b42bf4caf249b56bfd902d574cac63df</string>
+              <string>f663242ab6c7aa1601a96907202cfd04fee03720</string>
               <key>hash_algorithm</key>
               <string>sha1</string>
               <key>url</key>
-              <string>https://github.com/secondlife/3p-expat/releases/download/v2.1.1/expat-2.1.1.71e5d8b-windows-71e5d8b.tar.zst</string>
+              <string>https://github.com/secondlife/3p-expat/releases/download/v2.1.1.1f36d02/expat-2.1.1.1f36d02-windows-1f36d02.tar.zst</string>
             </map>
             <key>name</key>
             <string>windows</string>
@@ -88,18 +87,18 @@
             <key>archive</key>
             <map>
               <key>hash</key>
-              <string>8270ac8b2687f5978520d07e81ed91b86d1412d4</string>
+              <string>47c01a89bc32c5740efe51be43e459ffd9b7cd34</string>
               <key>hash_algorithm</key>
               <string>sha1</string>
               <key>url</key>
-              <string>https://github.com/secondlife/3p-expat/releases/download/v2.1.1/expat-2.1.1.71e5d8b-windows64-71e5d8b.tar.zst</string>
+              <string>https://github.com/secondlife/3p-expat/releases/download/v2.1.1.1f36d02/expat-2.1.1.1f36d02-windows64-1f36d02.tar.zst</string>
             </map>
             <key>name</key>
             <string>windows64</string>
           </map>
         </map>
         <key>version</key>
-        <string>2.1.1.71e5d8b</string>
+        <string>2.1.1.1f36d02</string>
       </map>
       <key>openssl</key>
       <map>
@@ -291,5 +290,4 @@
     <string>autobuild</string>
     <key>version</key>
     <string>1.3</string>
-  </map>
-</llsd>
+  </map></llsd>
