@@ -119,9 +119,11 @@
             <key>archive</key>
             <map>
               <key>hash</key>
-              <string>142d0ad85d0ee4fbb673c9f9e414fbdd</string>
+              <string>b286e4a10cf6b1b2710b85ff96ffc0e41fd5fde8</string>
+              <key>hash_algorithm</key>
+              <string>sha1</string>
               <key>url</key>
-              <string>https://automated-builds-secondlife-com.s3.amazonaws.com/ct2/87769/805772/openssl-1.1.1l.563846-darwin64-563846.tar.bz2</string>
+              <string>https://github.com/secondlife/3p-openssl/releases/download/v1.1.1q.de53f55/openssl-1.1.1q.de53f55-darwin64-de53f55.tar.zst</string>
             </map>
             <key>name</key>
             <string>darwin64</string>
@@ -131,9 +133,11 @@
             <key>archive</key>
             <map>
               <key>hash</key>
-              <string>d50ccfbf0c1d249392919e2c46ad8d5c</string>
+              <string>5f6953db991ef6badb0525ecc98daf28d368e9e7</string>
+              <key>hash_algorithm</key>
+              <string>sha1</string>
               <key>url</key>
-              <string>http://automated-builds-secondlife-com.s3.amazonaws.com/ct2/8339/33495/openssl-1.0.2l.508328-linux64-508328.tar.bz2</string>
+              <string>https://github.com/secondlife/3p-openssl/releases/download/v1.1.1q.de53f55/openssl-1.1.1q.de53f55-linux64-de53f55.tar.zst</string>
             </map>
             <key>name</key>
             <string>linux64</string>
@@ -143,9 +147,11 @@
             <key>archive</key>
             <map>
               <key>hash</key>
-              <string>55bd833166d03f1467e2c7f24fa9143e</string>
+              <string>dbf2f69a7d73821dbe12288097298924e866e606</string>
+              <key>hash_algorithm</key>
+              <string>sha1</string>
               <key>url</key>
-              <string>https://automated-builds-secondlife-com.s3.amazonaws.com/ct2/87775/805841/openssl-1.1.1l.563846-windows-563846.tar.bz2</string>
+              <string>https://github.com/secondlife/3p-openssl/releases/download/v1.1.1q.de53f55/openssl-1.1.1q.de53f55-windows-de53f55.tar.zst</string>
             </map>
             <key>name</key>
             <string>windows</string>
@@ -155,16 +161,18 @@
             <key>archive</key>
             <map>
               <key>hash</key>
-              <string>6fefc60f68882fc6b246521b696497ab</string>
+              <string>8bd3dea6d81de5e469b241a1b79e61efce6ecc05</string>
+              <key>hash_algorithm</key>
+              <string>sha1</string>
               <key>url</key>
-              <string>https://automated-builds-secondlife-com.s3.amazonaws.com/ct2/87774/805833/openssl-1.1.1l.563846-windows64-563846.tar.bz2</string>
+              <string>https://github.com/secondlife/3p-openssl/releases/download/v1.1.1q.de53f55/openssl-1.1.1q.de53f55-windows64-de53f55.tar.zst</string>
             </map>
             <key>name</key>
             <string>windows64</string>
           </map>
         </map>
         <key>version</key>
-        <string>1.1.1l.563846</string>
+        <string>1.1.1q.de53f55</string>
       </map>
     </map>
     <key>package_description</key>
