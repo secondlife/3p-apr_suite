@@ -94,6 +94,7 @@ case "$AUTOBUILD_PLATFORM" in
          -A "$AUTOBUILD_WIN_VSPLATFORM" \
          -DCMAKE_INSTALL_PREFIX="$(cygpath -m "$TOP_DIR/apr")" \
          -DCMAKE_C_FLAGS="$LL_BUILD_RELEASE" \
+         -DAPR_HAVE_IPV6=OFF \
          "$(cygpath -m "$TOP_DIR/apr")"
     then
         set +x
@@ -155,6 +156,7 @@ case "$AUTOBUILD_PLATFORM" in
     cp apr/include/*.h "$INCLUDE_DIR"
 ##  cp apr-iconv/include/*.h "$INCLUDE_DIR"
     cp apr-util/include/*.h "$INCLUDE_DIR"
+    cp "$APR_UTIL_BUILD_DIR"/*.h "$INCLUDE_DIR"
     mkdir -p "$INCLUDE_DIR/arch"    || echo "$INCLUDE_DIR/arch exists"
     cp apr/include/arch/apr_private_common.h "$INCLUDE_DIR/arch"
     cp -R "apr/include/arch/win32" "$INCLUDE_DIR/arch"
