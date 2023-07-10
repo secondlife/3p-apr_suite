@@ -543,7 +543,25 @@ APR_DECLARE(apr_status_t) apr_proc_create(apr_proc_t *new,
         }
     }
 
-    if (attr->autokill)
+#if 0
+    // Since Windows 8 / Windows Server 2012, jobs can be nested:
+    // https://learn.microsoft.com/en-us/windows/win32/procthread/nested-jobs
+    // Also, CREATE_BREAKAWAY_FROM_JOB requires JOB_OBJECT_LIMIT_BREAKAWAY_OK.
+    // Without that permission, setting CREATE_BREAKAWAY_FROM_JOB causes
+    // CreateProcessW() to fail with "Access is denied." GitHub Windows
+    // runners obviously run actions within a job that does not permit
+    // JOB_OBJECT_LIMIT_BREAKAWAY_OK: setting this flag fails in that way.
+    // While a process can query its own job limits using
+    // QueryInformationJobObject(), the API is intentionally designed to
+    // discourage updating its own job limits: SetInformationJobObject()
+    // requires a non-NULL job object handle. You can open an existing job
+    // object with a known name, but not all job objects even have names.
+    // Bottom line:
+    // - we might or might not be running with JOB_OBJECT_LIMIT_BREAKAWAY_OK
+    // - we can't explicitly set JOB_OBJECT_LIMIT_BREAKAWAY_OK for ourselves
+    // - without JOB_OBJECT_LIMIT_BREAKAWAY_OK, we can't set CREATE_BREAKAWAY_FROM_JOB
+    // - but on any modern Windows system, we shouldn't need to.
+    if (attr->autokill) // && APR_WIN_NT <= apr_os_level && apr_os_level < APR_WIN_8)
     {
         // It's important to pass CREATE_BREAKAWAY_FROM_JOB because Windows 7 et
         // al. tend to implicitly launch new processes already bound to a job. From
@@ -563,6 +581,7 @@ APR_DECLARE(apr_status_t) apr_proc_create(apr_proc_t *new,
             dwCreationFlags |= CREATE_BREAKAWAY_FROM_JOB;
         }
     }
+#endif
 
     /* progname must be unquoted, in native format, as there are all sorts 
      * of bugs in the NT library loader code that fault when parsing '/'.
