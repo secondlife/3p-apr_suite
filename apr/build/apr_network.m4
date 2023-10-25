@@ -63,8 +63,17 @@ AC_DEFUN([APR_CHECK_WORKING_GETADDRINFO], [
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#ifdef HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
 
-void main(void) {
+int main(void) {
     struct addrinfo hints, *ai;
     int error;
 
@@ -151,8 +160,14 @@ AC_DEFUN([APR_CHECK_WORKING_GETNAMEINFO], [
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
+#ifdef HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
 
-void main(void) {
+int main(void) {
     struct sockaddr_in sa;
     char hbuf[256];
     int error;
@@ -194,8 +209,11 @@ AC_DEFUN([APR_CHECK_NEGATIVE_EAI], [
 #ifdef HAVE_NETDB_H
 #include <netdb.h>
 #endif
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
 
-void main(void) {
+int main(void) {
     if (EAI_ADDRFAMILY < 0) {
         exit(0);
     }
@@ -388,9 +406,11 @@ AC_DEFUN([APR_CHECK_TCP_NODELAY_INHERITED], [
   AC_CACHE_CHECK(if TCP_NODELAY setting is inherited from listening sockets, ac_cv_tcp_nodelay_inherited,[
   AC_TRY_RUN( [
 #include <stdio.h>
+#include <stdlib.h>
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
+#include <string.h>
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
@@ -402,6 +422,9 @@ AC_DEFUN([APR_CHECK_TCP_NODELAY_INHERITED], [
 #endif
 #ifndef HAVE_SOCKLEN_T
 typedef int socklen_t;
+#endif
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
 #endif
 int main(void) {
     int listen_s, connected_s, client_s;
@@ -555,12 +578,26 @@ dnl
 AC_DEFUN([APR_CHECK_O_NONBLOCK_INHERITED], [
   AC_CACHE_CHECK(if O_NONBLOCK setting is inherited from listening sockets, ac_cv_o_nonblock_inherited,[
   AC_TRY_RUN( [
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+#ifdef HAVE_STRING_H
+#include <string.h>
+#endif
+#ifdef HAVE_STDIO_H
 #include <stdio.h>
+#endif
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+#ifdef HAVE_SYS_SELECT_H
+#include <sys/select.h>
 #endif
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
@@ -574,11 +611,16 @@ typedef int socklen_t;
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
 int main(void) {
     int listen_s, connected_s, client_s;
     int listen_port, rc;
     struct sockaddr_in sa;
     socklen_t sa_len;
+    fd_set fds;
+    struct timeval tv;
 
     listen_s = socket(AF_INET, SOCK_STREAM, 0);
     if (listen_s < 0) {
@@ -632,6 +674,26 @@ int main(void) {
         exit(1);
     }
     sa_len = sizeof sa;
+    /* 1 second select timeout */
+    tv.tv_sec = 1;
+    tv.tv_usec = 0;
+    /* Set up fd set */
+    FD_ZERO(&fds);
+    FD_SET(listen_s, &fds);
+    /* Wait for socket to become readable */
+    rc = select(listen_s + 1, &fds, NULL, NULL, &tv);
+    if (rc < 0) {
+        perror("select");
+        exit(1);
+    }
+    if (rc == 0) {
+        fprintf(stderr, "Socket failed to become readable (timeout)\n");
+        exit(1);
+    }
+    if (!FD_ISSET(listen_s, &fds)) {
+        fprintf(stderr, "Socket failed to become readable (selected another fd)\n");
+        exit(1);
+    }
     connected_s = accept(listen_s, (struct sockaddr *)&sa, &sa_len);
     if (connected_s < 0) {
         perror("accept");
@@ -698,6 +760,12 @@ AC_TRY_COMPILE([
 #ifdef HAVE_ARPA_INET_H
 #include <arpa/inet.h>
 #endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
 ],[
 inet_addr("127.0.0.1");
 ],[
@@ -718,6 +786,10 @@ fi
 AC_DEFUN([APR_CHECK_INET_NETWORK], [
 AC_CACHE_CHECK(for inet_network, ac_cv_func_inet_network,[
 AC_TRY_COMPILE([
+#include <sys/socket.h>
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -788,6 +860,36 @@ else
 fi
 ])
 
+dnl Check for presence of struct sockaddr_un.
+AC_DEFUN([APR_CHECK_SOCKADDR_UN], [
+AC_CACHE_CHECK(for sockaddr_un, ac_cv_define_sockaddr_un,[
+AC_TRY_COMPILE([
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#ifdef HAVE_SYS_UN_H
+#include <sys/un.h>
+#endif
+],[
+struct sockaddr_un sa;
+],[
+    ac_cv_define_sockaddr_un=yes
+],[
+    ac_cv_define_sockaddr_un=no
+])
+])
+
+if test "$ac_cv_define_sockaddr_un" = "yes"; then
+  have_sockaddr_un=1
+else
+  have_sockaddr_un=0
+fi
+AC_SUBST(have_sockaddr_un)
+])
+
 dnl
 dnl APR_H_ERRNO_COMPILE_CHECK
 dnl
@@ -822,8 +924,16 @@ dnl check for presence of SCTP protocol support
 dnl
 AC_DEFUN([APR_CHECK_SCTP],
 [
-  AC_CACHE_CHECK([whether SCTP is supported], [apr_cv_sctp], [
-  AC_TRY_RUN([
+AC_ARG_ENABLE([sctp],
+    APR_HELP_STRING([--disable-sctp], [disable SCTP protocol support]),
+    [apr_wants_sctp=$enableval],
+    [apr_wants_sctp=any])
+
+if test "$apr_wants_sctp" = no; then
+    apr_cv_sctp=no
+else
+    AC_CACHE_CHECK([whether SCTP is supported], [apr_cv_sctp], [
+    AC_TRY_RUN([
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -848,6 +958,11 @@ int main(void) {
        exit(2);
     exit(0);
 }], [apr_cv_sctp=yes], [apr_cv_sctp=no], [apr_cv_sctp=no])])
+fi
+
+if test "${apr_wants_sctp}X${apr_cv_sctp}" = yesXno; then
+   AC_MSG_ERROR([SCTP support requested but not available])
+fi
 
 if test "$apr_cv_sctp" = "yes"; then
     have_sctp=1
@@ -861,7 +976,9 @@ AC_DEFUN([APR_CHECK_MCAST], [
 AC_CACHE_CHECK([for struct ip_mreq], [apr_cv_struct_ipmreq], [
 AC_TRY_COMPILE([
 #include <sys/types.h>
+#ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
+#endif
 ], [
     struct ip_mreq mip;
     mip.imr_interface.s_addr = INADDR_ANY;

@@ -18,6 +18,7 @@
 #include "apr_portable.h"
 #include "apr_user.h"
 #include "apr_private.h"
+#include "apr_arch_utf8.h"
 #if APR_HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -27,37 +28,44 @@ APR_DECLARE(apr_status_t) apr_gid_get(apr_gid_t *gid,
 {
 #ifdef _WIN32_WCE
     return APR_ENOTIMPL;
+#elif ! UNICODE
+#error Linden apr_gid_get() requires wchar_t support
 #else
     SID_NAME_USE sidtype;
-    char anydomain[256];
-    char *domain;
+    wchar_t anydomain[256];
+    wchar_t *domain;
     DWORD sidlen = 0;
-    DWORD domlen = sizeof(anydomain);
+    DWORD domlen = sizeof(anydomain)/sizeof(anydomain[0]);
     DWORD rv;
-    char *pos;
+    wchar_t *pos;
 
-    if ((pos = strchr(groupname, '/'))) {
-        domain = apr_pstrndup(p, groupname, pos - groupname);
-        groupname = pos + 1;
-    }
-    else if ((pos = strchr(groupname, '\\'))) {
-        domain = apr_pstrndup(p, groupname, pos - groupname);
-        groupname = pos + 1;
+    /* convert UTF8 groupname to wchar_t */
+    wchar_t wgroupname[256], *pgroupname;
+    apr_size_t groupname_len = strlen(groupname);
+    apr_size_t wgroupname_size = sizeof(wgroupname)/sizeof(wgroupname[0]);
+    apr_conv_utf8_to_ucs2(groupname, &groupname_len, wgroupname, &wgroupname_size);
+
+    if ((pos = wcschr(wgroupname, L'/')) ||
+        (pos = wcschr(wgroupname, L'\\'))) {
+        *pos = L'\0';
+        domain = wgroupname;
+        pgroupname = pos + 1;
     }
     else {
         domain = NULL;
+        pgroupname = wgroupname;
     }
     /* Get nothing on the first pass ... need to size the sid buffer 
      */
-    rv = LookupAccountName(domain, groupname, domain, &sidlen, 
-                           anydomain, &domlen, &sidtype);
+    rv = LookupAccountNameW(domain, pgroupname, domain, &sidlen, 
+                            anydomain, &domlen, &sidtype);
     if (sidlen) {
         /* Give it back on the second pass
          */
         *gid = apr_palloc(p, sidlen);
-        domlen = sizeof(anydomain);
-        rv = LookupAccountName(domain, groupname, *gid, &sidlen, 
-                               anydomain, &domlen, &sidtype);
+        domlen = sizeof(anydomain)/sizeof(anydomain[0]);
+        rv = LookupAccountNameW(domain, pgroupname, *gid, &sidlen, 
+                                anydomain, &domlen, &sidtype);
     }
     if (!sidlen || !rv) {
         return apr_get_os_error();
@@ -70,17 +78,26 @@ APR_DECLARE(apr_status_t) apr_gid_name_get(char **groupname, apr_gid_t groupid, 
 {
 #ifdef _WIN32_WCE
     *groupname = apr_pstrdup(p, "Administrators");
+#elif ! UNICODE
+#error Linden apr_gid_name_get() requires wchar_t support
 #else
     SID_NAME_USE type;
-    char name[MAX_PATH], domain[MAX_PATH];
-    DWORD cbname = sizeof(name), cbdomain = sizeof(domain);
+    wchar_t wname[MAX_PATH], domain[MAX_PATH];
+    DWORD cbname = sizeof(wname)/sizeof(wname[0]), cbdomain = sizeof(domain)/sizeof(domain[0]);
+    char name[MAX_PATH];
+    apr_size_t wname_len;
+    apr_size_t name_size = sizeof(name);
+
     if (!groupid)
         return APR_EINVAL;
-    if (!LookupAccountSid(NULL, groupid, name, &cbname, domain, &cbdomain, &type))
+    if (!LookupAccountSidW(NULL, groupid, wname, &cbname, domain, &cbdomain, &type))
         return apr_get_os_error();
     if (type != SidTypeGroup && type != SidTypeWellKnownGroup 
                              && type != SidTypeAlias)
         return APR_EINVAL;
+    /* convert returned wname from wchar_t to char */
+    wname_len = wcslen(wname);
+    apr_conv_ucs2_to_utf8(wname, &wname_len, name, &name_size);
     *groupname = apr_pstrdup(p, name);
 #endif
     return APR_SUCCESS;

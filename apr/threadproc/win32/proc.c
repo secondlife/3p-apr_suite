@@ -526,8 +526,8 @@ APR_DECLARE(apr_status_t) apr_proc_create(apr_proc_t *new,
     new->err = attr->parent_err;
 
     if (attr->detached) {
-        /* If we are creating ourselves detached, Then we should hide the
-         * window we are starting in.  And we had better redfine our
+        /* If we are creating ourselves detached, then we should hide the
+         * window we are starting in.  And we had better redefine our
          * handles for STDIN, STDOUT, and STDERR. Do not set the
          * detached attribute for Win9x. We have found that Win9x does
          * not manage the stdio handles properly when running old 16
@@ -543,7 +543,25 @@ APR_DECLARE(apr_status_t) apr_proc_create(apr_proc_t *new,
         }
     }
 
-    if (attr->autokill)
+#if 0
+    // Since Windows 8 / Windows Server 2012, jobs can be nested:
+    // https://learn.microsoft.com/en-us/windows/win32/procthread/nested-jobs
+    // Also, CREATE_BREAKAWAY_FROM_JOB requires JOB_OBJECT_LIMIT_BREAKAWAY_OK.
+    // Without that permission, setting CREATE_BREAKAWAY_FROM_JOB causes
+    // CreateProcessW() to fail with "Access is denied." GitHub Windows
+    // runners obviously run actions within a job that does not permit
+    // JOB_OBJECT_LIMIT_BREAKAWAY_OK: setting this flag fails in that way.
+    // While a process can query its own job limits using
+    // QueryInformationJobObject(), the API is intentionally designed to
+    // discourage updating its own job limits: SetInformationJobObject()
+    // requires a non-NULL job object handle. You can open an existing job
+    // object with a known name, but not all job objects even have names.
+    // Bottom line:
+    // - we might or might not be running with JOB_OBJECT_LIMIT_BREAKAWAY_OK
+    // - we can't explicitly set JOB_OBJECT_LIMIT_BREAKAWAY_OK for ourselves
+    // - without JOB_OBJECT_LIMIT_BREAKAWAY_OK, we can't set CREATE_BREAKAWAY_FROM_JOB
+    // - but on any modern Windows system, we shouldn't need to.
+    if (attr->autokill) // && APR_WIN_NT <= apr_os_level && apr_os_level < APR_WIN_8)
     {
         // It's important to pass CREATE_BREAKAWAY_FROM_JOB because Windows 7 et
         // al. tend to implicitly launch new processes already bound to a job. From
@@ -563,13 +581,14 @@ APR_DECLARE(apr_status_t) apr_proc_create(apr_proc_t *new,
             dwCreationFlags |= CREATE_BREAKAWAY_FROM_JOB;
         }
     }
+#endif
 
     /* progname must be unquoted, in native format, as there are all sorts 
      * of bugs in the NT library loader code that fault when parsing '/'.
      * XXX progname must be NULL if this is a 16 bit app running in WOW
      */
     if (progname[0] == '\"') {
-        progname = apr_pstrndup(pool, progname + 1, strlen(progname) - 2);
+        progname = apr_pstrmemdup(pool, progname + 1, strlen(progname) - 2);
     }
 
     if (attr->cmdtype == APR_PROGRAM || attr->cmdtype == APR_PROGRAM_ENV) {
@@ -629,7 +648,7 @@ APR_DECLARE(apr_status_t) apr_proc_create(apr_proc_t *new,
             return APR_EINVAL;
         }
         if (shellcmd[0] == '"') {
-            progname = apr_pstrndup(pool, shellcmd + 1, strlen(shellcmd) - 2);
+            progname = apr_pstrmemdup(pool, shellcmd + 1, strlen(shellcmd) - 2);
         }
         else {
             progname = shellcmd;
@@ -671,7 +690,7 @@ APR_DECLARE(apr_status_t) apr_proc_create(apr_proc_t *new,
                 return APR_EINVAL;
             }
             if (shellcmd[0] == '"') {
-                progname = apr_pstrndup(pool, shellcmd + 1, strlen(shellcmd) - 2);
+                progname = apr_pstrmemdup(pool, shellcmd + 1, strlen(shellcmd) - 2);
             }
             else {
                 progname = shellcmd;
@@ -1520,6 +1539,14 @@ APR_DECLARE(apr_status_t) apr_proc_wait(apr_proc_t *proc,
 }
 
 APR_DECLARE(apr_status_t) apr_proc_detach(int daemonize)
+{
+    return APR_ENOTIMPL;
+}
+
+APR_DECLARE(apr_status_t) apr_procattr_perms_set_register(apr_procattr_t *attr,
+                                                 apr_perms_setfn_t *perms_set_fn,
+                                                 void *data,
+                                                 apr_fileperms_t perms)
 {
     return APR_ENOTIMPL;
 }

@@ -19,6 +19,7 @@
 #include "apr_portable.h"
 #include "apr_user.h"
 #include "apr_arch_file_io.h"
+#include "apr_arch_utf8.h"
 #if APR_HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -95,10 +96,13 @@ APR_DECLARE(apr_status_t) apr_uid_homepath_get(char **dirname,
         strcpy(regkey, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\"
                        "ProfileList\\");
         keylen = (DWORD)strlen(regkey);
+        /* Because this code path is only for Windows older than NT, we do not
+           care about the possibility of a non-ASCII username here. */
         apr_cpystrn(regkey + keylen, username, sizeof(regkey) - keylen);
     }
 
-    if ((rv = RegOpenKeyEx(HKEY_LOCAL_MACHINE, regkey, 0, 
+    /* regkey is specifically char[], so explicitly call RegOpenKeyExA() */
+    if ((rv = RegOpenKeyExA(HKEY_LOCAL_MACHINE, regkey, 0, 
                            KEY_QUERY_VALUE, &key)) != ERROR_SUCCESS)
         return APR_FROM_OS_ERROR(rv);
 
@@ -136,7 +140,7 @@ APR_DECLARE(apr_status_t) apr_uid_homepath_get(char **dirname,
     ELSE_WIN_OS_IS_ANSI
     {
         keylen = sizeof(regkey);
-        rv = RegQueryValueEx(key, "ProfileImagePath", NULL, &type,
+        rv = RegQueryValueExA(key, "ProfileImagePath", NULL, &type,
                                   (void*)regkey, &keylen);
         RegCloseKey(key);
         if (rv != ERROR_SUCCESS)
@@ -146,7 +150,7 @@ APR_DECLARE(apr_status_t) apr_uid_homepath_get(char **dirname,
         }
         else if (type == REG_EXPAND_SZ) {
             char path[MAX_PATH];
-            ExpandEnvironmentStrings(regkey, path, sizeof(path));
+            ExpandEnvironmentStringsA(regkey, path, sizeof(path));
             *dirname = apr_pstrdup(p, path);
         }
         else
@@ -171,27 +175,38 @@ APR_DECLARE(apr_status_t) apr_uid_current(apr_uid_t *uid,
     DWORD needed;
     TOKEN_USER *usr;
     TOKEN_PRIMARY_GROUP *grp;
-    
+    apr_status_t rv;
+
     if(!OpenProcessToken(GetCurrentProcess(), STANDARD_RIGHTS_READ | READ_CONTROL | TOKEN_QUERY, &threadtok)) {
         return apr_get_os_error();
     }
 
     *uid = NULL;
     if (!GetTokenInformation(threadtok, TokenUser, NULL, 0, &needed)
-        && (GetLastError() == ERROR_INSUFFICIENT_BUFFER) 
+        && (GetLastError() == ERROR_INSUFFICIENT_BUFFER)
         && (usr = apr_palloc(p, needed))
-        && GetTokenInformation(threadtok, TokenUser, usr, needed, &needed))
+        && GetTokenInformation(threadtok, TokenUser, usr, needed, &needed)) {
         *uid = usr->User.Sid;
-    else
-        return apr_get_os_error();
+    }
+    else {
+        rv = apr_get_os_error();
+        CloseHandle(threadtok);
+        return rv;
+    }
 
     if (!GetTokenInformation(threadtok, TokenPrimaryGroup, NULL, 0, &needed)
         && (GetLastError() == ERROR_INSUFFICIENT_BUFFER) 
         && (grp = apr_palloc(p, needed))
-        && GetTokenInformation(threadtok, TokenPrimaryGroup, grp, needed, &needed))
+        && GetTokenInformation(threadtok, TokenPrimaryGroup, grp, needed, &needed)) {
         *gid = grp->PrimaryGroup;
-    else
-        return apr_get_os_error();
+    }
+    else {
+        rv = apr_get_os_error();
+        CloseHandle(threadtok);
+        return rv;
+    }
+
+    CloseHandle(threadtok);
 
     return APR_SUCCESS;
 #endif 
@@ -202,37 +217,44 @@ APR_DECLARE(apr_status_t) apr_uid_get(apr_uid_t *uid, apr_gid_t *gid,
 {
 #ifdef _WIN32_WCE
     return APR_ENOTIMPL;
+#elif ! UNICODE
+#error Linden apr_uid_get() requires wchar_t support
 #else
     SID_NAME_USE sidtype;
-    char anydomain[256];
-    char *domain;
+    wchar_t anydomain[256];
+    wchar_t *domain;
     DWORD sidlen = 0;
-    DWORD domlen = sizeof(anydomain);
+    DWORD domlen = sizeof(anydomain)/sizeof(anydomain[0]);
     DWORD rv;
-    char *pos;
+    wchar_t *pos;
 
-    if ((pos = strchr(username, '/'))) {
-        domain = apr_pstrndup(p, username, pos - username);
-        username = pos + 1;
-    }
-    else if ((pos = strchr(username, '\\'))) {
-        domain = apr_pstrndup(p, username, pos - username);
-        username = pos + 1;
+    /* convert UTF8 username to wchar_t */
+    wchar_t wusername[256], *pusername;
+    apr_size_t username_len = strlen(username);
+    apr_size_t wusername_size = sizeof(wusername)/sizeof(wusername[0]);
+    apr_conv_utf8_to_ucs2(username, &username_len, wusername, &wusername_size);
+
+    if ((pos = wcschr(wusername, L'/')) ||
+        (pos = wcschr(wusername, L'\\'))) {
+        *pos = L'\0';
+        domain = wusername;
+        pusername = pos + 1;
     }
     else {
         domain = NULL;
+        pusername = wusername;
     }
     /* Get nothing on the first pass ... need to size the sid buffer 
      */
-    rv = LookupAccountName(domain, username, domain, &sidlen, 
+    rv = LookupAccountNameW(domain, pusername, domain, &sidlen, 
                            anydomain, &domlen, &sidtype);
     if (sidlen) {
         /* Give it back on the second pass
          */
         *uid = apr_palloc(p, sidlen);
-        domlen = sizeof(anydomain);
-        rv = LookupAccountName(domain, username, *uid, &sidlen, 
-                               anydomain, &domlen, &sidtype);
+        domlen = sizeof(anydomain)/sizeof(anydomain[0]);
+        rv = LookupAccountNameW(domain, pusername, *uid, &sidlen, 
+                                anydomain, &domlen, &sidtype);
     }
     if (!sidlen || !rv) {
         return apr_get_os_error();
@@ -250,16 +272,25 @@ APR_DECLARE(apr_status_t) apr_uid_name_get(char **username, apr_uid_t userid,
 #ifdef _WIN32_WCE
     *username = apr_pstrdup(p, "Administrator");
     return APR_SUCCESS;
+#elif ! UNICODE
+#error Linden apr_uid_name_get() requires wchar_t support
 #else
     SID_NAME_USE type;
-    char name[MAX_PATH], domain[MAX_PATH];
-    DWORD cbname = sizeof(name), cbdomain = sizeof(domain);
+    wchar_t wname[MAX_PATH], domain[MAX_PATH];
+    DWORD cbname = sizeof(wname)/sizeof(wname[0]), cbdomain = sizeof(domain)/sizeof(domain[0]);
+    char name[MAX_PATH];
+    apr_size_t wname_len;
+    apr_size_t name_size = sizeof(name);
+
     if (!userid)
         return APR_EINVAL;
-    if (!LookupAccountSid(NULL, userid, name, &cbname, domain, &cbdomain, &type))
+    if (!LookupAccountSidW(NULL, userid, wname, &cbname, domain, &cbdomain, &type))
         return apr_get_os_error();
     if (type != SidTypeUser && type != SidTypeAlias && type != SidTypeWellKnownGroup)
         return APR_EINVAL;
+    /* convert returned wname from wchar_t to char */
+    wname_len = wcslen(wname);
+    apr_conv_ucs2_to_utf8(wname, &wname_len, name, &name_size);
     *username = apr_pstrdup(p, name);
     return APR_SUCCESS;
 #endif

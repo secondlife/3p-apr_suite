@@ -7,8 +7,6 @@ set -e
 # complain about unset env variables
 set -u
 
-APR_INCLUDE_DIR="apr/include"
-
 if [ -z "$AUTOBUILD" ] ; then
     exit 1
 fi
@@ -20,114 +18,177 @@ else
 fi
 
 STAGING_DIR="$(pwd)"
-TOP_DIR="$(dirname "$0")"
+# Get TOP_DIR as an absolute path, in case `dirname $0` is relative.
+pushd "$(dirname "$0")"
+TOP_DIR="$(pwd)"
+popd
+
+PKG_LIB="$STAGING_DIR/packages/lib"
+PKG_INCLUDE="$STAGING_DIR/packages/include"
+EXPAT_LIBRARIES="$PKG_LIB/release"
+EXPAT_INCLUDE_DIRS="$PKG_INCLUDE/expat"
+OPENSSL_LIBRARIES="$PKG_LIB/release"
+OPENSSL_INCLUDE_DIRS="$PKG_INCLUDE/openssl"
+
+# remove_cxxstd
+source "$(dirname "$AUTOBUILD_VARIABLES_FILE")/convenience"
 
 # load autobuild provided shell functions and variables
 source_environment_tempfile="$STAGING_DIR/source_environment.sh"
 "$autobuild" source_environment > "$source_environment_tempfile"
 . "$source_environment_tempfile"
 
+# Use msbuild.exe instead of devenv.com
+build_sln() {
+    local solution=$1
+    local config=$2
+    local proj="${3:-}"
+    local toolset="${AUTOBUILD_WIN_VSTOOLSET:-v143}"
+
+    # e.g. config = "Release|$AUTOBUILD_WIN_VSPLATFORM" per devenv.com convention
+    local -a confparts
+    IFS="|" read -ra confparts <<< "$config"
+
+    msbuild.exe \
+        "$(cygpath -w "$solution")" \
+        ${proj:+-t:"$proj"} \
+        -p:Configuration="${confparts[0]}" \
+        -p:Platform="${confparts[1]}" \
+        -p:PlatformToolset=$toolset
+}
+
 # extract APR version into VERSION.txt
-APR_INCLUDE_DIR="../apr/include"
+APR_INCLUDE_DIR="$TOP_DIR/apr/include"
 # will match -- #<whitespace>define<whitespace>APR_MAJOR_VERSION<whitespace>number  future proofed :)
 major_version="$(sed -n -E 's/#[[:space:]]*define[[:space:]]+APR_MAJOR_VERSION[[:space:]]+([0-9]+)/\1/p' "${APR_INCLUDE_DIR}/apr_version.h")"
 minor_version="$(sed -n -E 's/#[[:space:]]*define[[:space:]]+APR_MINOR_VERSION[[:space:]]+([0-9]+)/\1/p' "${APR_INCLUDE_DIR}/apr_version.h")"
 patch_version="$(sed -n -E 's/#[[:space:]]*define[[:space:]]+APR_PATCH_VERSION[[:space:]]+([0-9]+)/\1/p' "${APR_INCLUDE_DIR}/apr_version.h")"
 version="${major_version}.${minor_version}.${patch_version}"
 build=${AUTOBUILD_BUILD_ID:=0}
-echo "${version}.${build}" > "${STAGING_DIR}/VERSION.txt"
+echo "${version}-${build}" > "${STAGING_DIR}/VERSION.txt"
 
 case "$AUTOBUILD_PLATFORM" in
+# ****************************************************************************
+# Windows
+# ****************************************************************************
   windows*)
     pushd "$TOP_DIR"
     RELEASE_OUT_DIR="$STAGING_DIR/lib/release"
 
     load_vsvars
 
-    # We've observed some weird failures in which the PATH is too big to be
-    # passed to a child process! When that gets munged, we start seeing errors
-    # like failing to understand the 'nmake' command. Thing is, by this point
-    # in the script we've acquired a shocking number of duplicate entries.
-    # Dedup the PATH using Python's OrderedDict, which preserves the order in
-    # which you insert keys.
-    # We find that some of the Visual Studio PATH entries appear both with and
-    # without a trailing slash, which is pointless. Strip those off and dedup
-    # what's left.
-    # Pass the existing PATH as an explicit argument rather than reading it
-    # from the environment to bypass the fact that cygwin implicitly converts
-    # PATH to Windows form when running a native executable. Since we're
-    # setting bash's PATH, leave everything in cygwin form. That means
-    # splitting and rejoining on ':' rather than on os.pathsep, which on
-    # Windows is ';'.
-    # Use python -u, else the resulting PATH will end with a spurious '\r'.
-    export PATH="$(python -u -c "import sys
-from collections import OrderedDict
-print(':'.join(OrderedDict((dir.rstrip('/'), 1) for dir in sys.argv[1].split(':'))))" "$PATH")"
+    # Set up EXPAT external dependency from autobuild package
+    APR_EXPAT_DIR="$TOP_DIR/apr-util/xml/expat"
+    cp "$EXPAT_INCLUDE_DIRS/expat.h" "$APR_EXPAT_DIR"
+    cp "$EXPAT_INCLUDE_DIRS/expat_external.h" "$APR_EXPAT_DIR"
+    cp "$EXPAT_LIBRARIES/libexpatMT.lib" "$APR_EXPAT_DIR"
 
-    export PATH="$(python -u -c "import sys
-print(':'.join(d for d in sys.argv[1].split(':')
-if not any(frag in d for frag in ('CommonExtensions', 'VSPerfCollectionTools', 'Team Tools'))))" "$PATH")"
-
-    python -c "print(' PATH '.center(72, '='))"
-    cygpath -p -m "$PATH" | tr ';' '\n'
-    python -c "print(' ${#PATH} chars in PATH '.center(72, '='))"
-
-    which nmake
-
-    for proj in apr aprutil apriconv xml libapr  libaprutil libapriconv
-      do build_sln "apr-util/aprutil.sln" "Release|$AUTOBUILD_WIN_VSPLATFORM" "$proj"
+    # have to use different CMake directories for APR build vs. APR-UTIL build
+    # --------------------------------- apr ----------------------------------
+    APR_BUILD_DIR="$STAGING_DIR/apr-build$AUTOBUILD_ADDRSIZE"
+    APR_RELEASE_DIR="$APR_BUILD_DIR/Release"
+    mkdir -p "$APR_BUILD_DIR"
+    pushd "$APR_BUILD_DIR"
+    logfile="CMakeFiles/CMakeOutput.log"
+    if ! cmake -G "$AUTOBUILD_WIN_CMAKE_GEN" \
+         -A "$AUTOBUILD_WIN_VSPLATFORM" \
+         -DCMAKE_INSTALL_PREFIX="$(cygpath -m "$TOP_DIR/apr")" \
+         -DCMAKE_C_FLAGS="$LL_BUILD_RELEASE" \
+         -DAPR_HAVE_IPV6=OFF \
+         "$(cygpath -m "$TOP_DIR/apr")"
+    then
+        set +x
+        if [[ -r "$logfile" ]]
+        then
+            python -c "print(r''' $logfile '''.center(72, '='))"
+            cat "$logfile"
+        fi
+        exit 1
+    fi
+    # output is APR.sln
+    for proj in apr-1 libapr-1
+    do
+        build_sln "APR.sln" "Release|$AUTOBUILD_WIN_VSPLATFORM" "$proj"
     done
+    # The above build generated apr.h into the current directory - put it in
+    # APR_INCLUDE_DIR
+    cp -v apr.h "$APR_INCLUDE_DIR"
+    # ------------------------------- apr-util -------------------------------
+    APR_UTIL_BUILD_DIR="$STAGING_DIR/apr-util-build$AUTOBUILD_ADDRSIZE"
+    APR_UTIL_RELEASE_DIR="$APR_UTIL_BUILD_DIR/Release"
+    mkdir -p "$APR_UTIL_BUILD_DIR"
+    cd "$APR_UTIL_BUILD_DIR"
+    if ! cmake -G "$AUTOBUILD_WIN_CMAKE_GEN" \
+         -A "$AUTOBUILD_WIN_VSPLATFORM" \
+         -DCMAKE_INSTALL_PREFIX="$(cygpath -m "$TOP_DIR/apr")" \
+         -DAPR_LIBRARIES:FILEPATH="$(cygpath -m "$APR_RELEASE_DIR/libapr-1.lib")" \
+         -DEXPAT_INCLUDE_DIR:PATH="$(cygpath -m "$APR_EXPAT_DIR")" \
+         -DEXPAT_LIBRARY:FILEPATH="$(cygpath -m "$APR_EXPAT_DIR/libexpatMT.lib")" \
+         -DOPENSSL_ROOT_DIR:PATH="$(cygpath -m "$OPENSSL_LIBRARIES")" \
+         -DCMAKE_C_FLAGS="$LL_BUILD_RELEASE" \
+         "$(cygpath -m "$TOP_DIR/apr-util")"
+    then
+        set +x
+        if [[ -r "$logfile" ]]
+        then
+            python -c "print(r''' $logfile '''.center(72, '='))"
+            cat "$logfile"
+        fi
+        exit 1
+    fi
+    # output is APR-Util.sln
+    for proj in aprutil-1 libaprutil-1
+    do
+        build_sln "APR-Util.sln" "Release|$AUTOBUILD_WIN_VSPLATFORM" "$proj"
+    done
+    popd
+    # ------------------------------------------------------------------------
 
     mkdir -p "$RELEASE_OUT_DIR" || echo "$RELEASE_OUT_DIR exists"
 
-    if [ "$AUTOBUILD_ADDRSIZE" = 32 ]
-      then 
-        bitdir=""
-      else
-        bitdir="/x64"
-    fi
-    cp "apr$bitdir/LibR/apr-1."{lib,pdb} "$RELEASE_OUT_DIR"
-    cp "apr-util$bitdir/LibR/aprutil-1."{lib,pdb} "$RELEASE_OUT_DIR"
-    cp "apr-iconv$bitdir/LibR/apriconv-1."{lib,pdb} "$RELEASE_OUT_DIR"
-    cp "apr$bitdir/Release/libapr-1."{lib,dll} "$RELEASE_OUT_DIR"
-    cp "apr$bitdir/Release/libapr.pdb" "$RELEASE_OUT_DIR"
-    cp "apr$bitdir/Release/libapr_src.pdb" "$RELEASE_OUT_DIR"
-    cp "apr-iconv$bitdir/Release/libapriconv-1."{lib,dll} "$RELEASE_OUT_DIR"
-    cp "apr-iconv$bitdir/Release/libapriconv.pdb" "$RELEASE_OUT_DIR"
-    cp "apr-iconv$bitdir/Release/libapriconv_src.pdb" "$RELEASE_OUT_DIR"
-    cp "apr-util$bitdir/Release/libaprutil-1."{lib,dll} "$RELEASE_OUT_DIR"
-    cp "apr-util$bitdir/Release/libaprutil.pdb" "$RELEASE_OUT_DIR"
-    cp "apr-util$bitdir/Release/libaprutil_src.pdb" "$RELEASE_OUT_DIR"
+    cp -v "$APR_RELEASE_DIR"/{apr-1.{lib,pdb},libapr-1.{lib,dll}} "$RELEASE_OUT_DIR"
+    cp -v "$APR_UTIL_RELEASE_DIR"/{aprutil-1.{lib,pdb},libaprutil-1.{lib,dll}} "$RELEASE_OUT_DIR"
+##  cp "apr-iconv$bitdir/LibR"/apriconv-1.{lib,pdb} "$RELEASE_OUT_DIR"
+##  cp "apr-iconv$bitdir/Release/libapriconv-1."{lib,dll} "$RELEASE_OUT_DIR"
 
     INCLUDE_DIR="$STAGING_DIR/include/apr-1"
     mkdir -p "$INCLUDE_DIR"      || echo "$INCLUDE_DIR exists"
     cp apr/include/*.h "$INCLUDE_DIR"
-    cp apr-iconv/include/*.h "$INCLUDE_DIR"
+##  cp apr-iconv/include/*.h "$INCLUDE_DIR"
     cp apr-util/include/*.h "$INCLUDE_DIR"
-    mkdir "$INCLUDE_DIR/arch"    || echo "$INCLUDE_DIR/arch exists"
+    cp "$APR_UTIL_BUILD_DIR"/*.h "$INCLUDE_DIR"
+    mkdir -p "$INCLUDE_DIR/arch"    || echo "$INCLUDE_DIR/arch exists"
     cp apr/include/arch/apr_private_common.h "$INCLUDE_DIR/arch"
     cp -R "apr/include/arch/win32" "$INCLUDE_DIR/arch"
-    mkdir "$INCLUDE_DIR/private" || echo "$INCLUDE_DIR/private exists"
+    mkdir -p "$INCLUDE_DIR/private" || echo "$INCLUDE_DIR/private exists"
     cp -R apr-util/include/private "$INCLUDE_DIR"
     popd
   ;;
 
+# ****************************************************************************
+# Mac
+# ****************************************************************************
   darwin*)
     PREFIX="$STAGING_DIR"
 
     opts="-arch $AUTOBUILD_CONFIGURE_ARCH $LL_BUILD_RELEASE"
+    plainopts="$(remove_cxxstd $opts)"
+    # per https://github.com/pyenv/pyenv/issues/1425
+    export SDKROOT="/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk"
+    export CC="clang"
+    export CFLAGS="$plainopts -I$SDKROOT/usr/include"
+    export CXXFLAGS="$opts"
+    export LDFLAGS="$plainopts"
+    export MAKEFLAGS="-j${AUTOBUILD_CPU_COUNT:-2}"
 
     pushd "$TOP_DIR/apr"
-    CC="clang" CFLAGS="$opts" CXXFLAGS="$opts" LDFLAGS="$opts" \
-        ./configure --prefix="$PREFIX"
+    ./configure --prefix="$PREFIX"
     make
     make install
     popd
 
     pushd "$TOP_DIR/apr-util"
-    CC="clang" CFLAGS="$opts" CXXFLAGS="$opts" LDFLAGS="$opts" \
-        ./configure --prefix="$PREFIX" --with-apr="$PREFIX" \
-        --with-expat="$PREFIX"
+    ./configure --prefix="$PREFIX" --with-apr="$PREFIX" --with-expat="$PREFIX"
     make
     make install
     popd
@@ -201,17 +262,11 @@ if not any(frag in d for frag in ('CommonExtensions', 'VSPerfCollectionTools', '
            do echo -change "$f" "@executable_path/../Resources/$(basename "$f")"; \
            done) ) \
         "$lib"
-
-    CONFIG_FILE="$build_secrets_checkout/code-signing-osx/config.sh"
-    if [ -f "$CONFIG_FILE" ]; then
-        source $CONFIG_FILE
-        codesign --force --timestamp --sign "$APPLE_SIGNATURE" "$PREFIX/lib/release/libapr-1.0.dylib"
-        codesign --force --timestamp --sign "$APPLE_SIGNATURE" "$PREFIX/lib/release/libaprutil-1.0.dylib"
-    else 
-        echo "No config file found; skipping codesign."
-    fi
   ;;
 
+# ****************************************************************************
+# Linux
+# ****************************************************************************
   linux*)
     PREFIX="$STAGING_DIR"
 
@@ -219,6 +274,8 @@ if not any(frag in d for frag in ('CommonExtensions', 'VSPerfCollectionTools', '
 
     # do release builds
     pushd "$TOP_DIR/apr"
+##      rm configure || echo "configure already gone"
+##      autoreconf -fi
         LDFLAGS="$opts" CFLAGS="$opts" CXXFLAGS="$opts" \
             ./configure --prefix="$PREFIX" --libdir="$PREFIX/lib/release"
         make
@@ -226,9 +283,11 @@ if not any(frag in d for frag in ('CommonExtensions', 'VSPerfCollectionTools', '
     popd
 
     pushd "$TOP_DIR/apr-iconv"
+##      rm configure || echo "configure already gone"
+##      autoreconf -fi
         # NOTE: the autotools scripts in iconv don't honor the --libdir switch so we
         # need to build to a dummy prefix and copy the files into the correct place
-        mkdir "$PREFIX/iconv"
+        mkdir -p "$PREFIX/iconv"
         LDFLAGS="$opts" CFLAGS="$opts" CXXFLAGS="$opts" \
             ./configure --prefix="$PREFIX/iconv" --with-apr="../apr"
         make
@@ -243,13 +302,15 @@ if not any(frag in d for frag in ('CommonExtensions', 'VSPerfCollectionTools', '
     popd
 
     pushd "$TOP_DIR/apr-util"
+##      rm configure || echo "configure already gone"
+##      autoreconf -fi
         # the autotools can't find the expat static lib with the layout of our
         # libraries so we need to copy the file to the correct location temporarily
         cp "$PREFIX/packages/lib/release/libexpat.a" "$PREFIX/packages/lib/"
 
         # the autotools for apr-util don't honor the --libdir switch so we
         # need to build to a dummy prefix and copy the files into the correct place
-        mkdir "$PREFIX/util"
+        mkdir -p "$PREFIX/util"
         LDFLAGS="$opts" CFLAGS="$opts" CXXFLAGS="$opts" \
             ./configure --prefix="$PREFIX/util" \
             --with-apr="../apr" \
