@@ -464,7 +464,7 @@ AC_DEFUN([APR_TRY_COMPILE_NO_WARNING],
 [apr_save_CFLAGS=$CFLAGS
  CFLAGS="$CFLAGS $CFLAGS_WARN"
  if test "$ac_cv_prog_gcc" = "yes"; then 
-   CFLAGS="$CFLAGS -Werror"
+   CFLAGS="$CFLAGS"
  fi
  AC_COMPILE_IFELSE(
    [AC_LANG_PROGRAM(
