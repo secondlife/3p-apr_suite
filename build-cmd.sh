@@ -271,7 +271,8 @@ case "$AUTOBUILD_PLATFORM" in
     PREFIX="$STAGING_DIR"
 
     opts="-m$AUTOBUILD_ADDRSIZE $LL_BUILD_RELEASE"
-
+    opts=$(echo $opts | sed -e 's/-std=c++17//')
+    
     # do release builds
     pushd "$TOP_DIR/apr"
         autoreconf -vif
