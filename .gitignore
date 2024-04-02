@@ -34,3 +34,5 @@ libtool
 .make.dirs
 *.exp
 config.status
+*.tar.*
+*~
