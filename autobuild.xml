@@ -28,11 +28,11 @@
             <key>archive</key>
             <map>
               <key>hash</key>
-              <string>953b8119c28e81b327197d1de3d44a78c6cd30dc</string>
+              <string>45393addcda09b1146abfdd42af8d4e4f6e4671b</string>
               <key>hash_algorithm</key>
               <string>sha1</string>
               <key>url</key>
-              <string>https://github.com/secondlife/3p-expat/releases/download/v2.6.2-r2/expat-2.6.2-r2-darwin64-8518267865.tar.zst</string>
+              <string>https://github.com/secondlife/3p-expat/releases/download/v2.6.2-r3/expat-2.6.2-r3-darwin64-8583963182.tar.zst</string>
             </map>
             <key>name</key>
             <string>darwin64</string>
@@ -54,11 +54,11 @@
             <key>archive</key>
             <map>
               <key>hash</key>
-              <string>b1f58b1f340a3bab726ad017fcf8515ffea4c3de</string>
+              <string>0cafca1370b272e7aa717f239c90750b0c19e307</string>
               <key>hash_algorithm</key>
               <string>sha1</string>
               <key>url</key>
-              <string>https://github.com/secondlife/3p-expat/releases/download/v2.6.2-r2/expat-2.6.2-r2-linux64-8518267865.tar.zst</string>
+              <string>https://github.com/secondlife/3p-expat/releases/download/v2.6.2-r3/expat-2.6.2-r3-linux64-8583963182.tar.zst</string>
             </map>
             <key>name</key>
             <string>linux64</string>
@@ -82,11 +82,11 @@
             <key>archive</key>
             <map>
               <key>hash</key>
-              <string>6e7a67b5ea6cf826862c9f0a5988a3ad8791a759</string>
+              <string>3bbe911f3658a42f17030e70388455c18108d709</string>
               <key>hash_algorithm</key>
               <string>sha1</string>
               <key>url</key>
-              <string>https://github.com/secondlife/3p-expat/releases/download/v2.6.2-r2/expat-2.6.2-r2-windows64-8518267865.tar.zst</string>
+              <string>https://github.com/secondlife/3p-expat/releases/download/v2.6.2-r3/expat-2.6.2-r3-windows64-8583963182.tar.zst</string>
             </map>
             <key>name</key>
             <string>windows64</string>
@@ -99,7 +99,7 @@
         <key>copyright</key>
         <string>Copyright (c) 1998, 1999, 2000 Thai Open Source Software Center Ltd and Clark Cooper - Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006 Expat maintainers.</string>
         <key>version</key>
-        <string>2.6.2-r2</string>
+        <string>2.6.2-r3</string>
         <key>name</key>
         <string>expat</string>
         <key>description</key>
