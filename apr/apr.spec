@@ -3,7 +3,7 @@
 
 Summary: Apache Portable Runtime library
 Name: apr
-Version: 1.7.2
+Version: 1.7.4
 Release: 1
 License: Apache Software License
 Group: System Environment/Libraries
