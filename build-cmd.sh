@@ -11,7 +11,7 @@ if [ -z "$AUTOBUILD" ] ; then
     exit 1
 fi
 
-if [ "$OSTYPE" = "cygwin" ] ; then
+if [[ "$OSTYPE" == "cygwin" || "$OSTYPE" == "msys" ]] ; then
     autobuild="$(cygpath -u $AUTOBUILD)"
 else
     autobuild="$AUTOBUILD"
@@ -31,31 +31,12 @@ OPENSSL_LIBRARIES="$PKG_LIB/release"
 OPENSSL_INCLUDE_DIRS="$PKG_INCLUDE/openssl"
 
 # remove_cxxstd
-source "$(dirname "$AUTOBUILD_VARIABLES_FILE")/convenience"
+source "$(dirname "$AUTOBUILD_VARIABLES_FILE")/functions"
 
 # load autobuild provided shell functions and variables
 source_environment_tempfile="$STAGING_DIR/source_environment.sh"
 "$autobuild" source_environment > "$source_environment_tempfile"
 . "$source_environment_tempfile"
-
-# Use msbuild.exe instead of devenv.com
-build_sln() {
-    local solution=$1
-    local config=$2
-    local proj="${3:-}"
-    local toolset="${AUTOBUILD_WIN_VSTOOLSET:-v143}"
-
-    # e.g. config = "Release|$AUTOBUILD_WIN_VSPLATFORM" per devenv.com convention
-    local -a confparts
-    IFS="|" read -ra confparts <<< "$config"
-
-    msbuild.exe \
-        "$(cygpath -w "$solution")" \
-        ${proj:+-t:"$proj"} \
-        -p:Configuration="${confparts[0]}" \
-        -p:Platform="${confparts[1]}" \
-        -p:PlatformToolset=$toolset
-}
 
 # extract APR version into VERSION.txt
 APR_INCLUDE_DIR="$TOP_DIR/apr/include"
@@ -77,12 +58,6 @@ case "$AUTOBUILD_PLATFORM" in
 
     load_vsvars
 
-    # Set up EXPAT external dependency from autobuild package
-    APR_EXPAT_DIR="$TOP_DIR/apr-util/xml/expat"
-    cp "$EXPAT_INCLUDE_DIRS/expat.h" "$APR_EXPAT_DIR"
-    cp "$EXPAT_INCLUDE_DIRS/expat_external.h" "$APR_EXPAT_DIR"
-    cp "$EXPAT_LIBRARIES/libexpatMT.lib" "$APR_EXPAT_DIR"
-
     # have to use different CMake directories for APR build vs. APR-UTIL build
     # --------------------------------- apr ----------------------------------
     APR_BUILD_DIR="$STAGING_DIR/apr-build$AUTOBUILD_ADDRSIZE"
@@ -90,10 +65,10 @@ case "$AUTOBUILD_PLATFORM" in
     mkdir -p "$APR_BUILD_DIR"
     pushd "$APR_BUILD_DIR"
     logfile="CMakeFiles/CMakeOutput.log"
-    if ! cmake -G "$AUTOBUILD_WIN_CMAKE_GEN" \
-         -A "$AUTOBUILD_WIN_VSPLATFORM" \
+    if ! cmake -G "Ninja Multi-Config" \
          -DCMAKE_INSTALL_PREFIX="$(cygpath -m "$TOP_DIR/apr")" \
          -DCMAKE_C_FLAGS="$LL_BUILD_RELEASE" \
+         -DCMAKE_SHARED_LINKER_FLAGS="/DEBUG:FULL" \
          -DAPR_HAVE_IPV6=OFF \
          "$(cygpath -m "$TOP_DIR/apr")"
     then
@@ -106,10 +81,7 @@ case "$AUTOBUILD_PLATFORM" in
         exit 1
     fi
     # output is APR.sln
-    for proj in apr-1 libapr-1
-    do
-        build_sln "APR.sln" "Release|$AUTOBUILD_WIN_VSPLATFORM" "$proj"
-    done
+    cmake --build . --config Release
     # The above build generated apr.h into the current directory - put it in
     # APR_INCLUDE_DIR
     cp -v apr.h "$APR_INCLUDE_DIR"
@@ -118,14 +90,14 @@ case "$AUTOBUILD_PLATFORM" in
     APR_UTIL_RELEASE_DIR="$APR_UTIL_BUILD_DIR/Release"
     mkdir -p "$APR_UTIL_BUILD_DIR"
     cd "$APR_UTIL_BUILD_DIR"
-    if ! cmake -G "$AUTOBUILD_WIN_CMAKE_GEN" \
-         -A "$AUTOBUILD_WIN_VSPLATFORM" \
+    if ! cmake -G "Ninja Multi-Config" \
          -DCMAKE_INSTALL_PREFIX="$(cygpath -m "$TOP_DIR/apr")" \
          -DAPR_LIBRARIES:FILEPATH="$(cygpath -m "$APR_RELEASE_DIR/libapr-1.lib")" \
-         -DEXPAT_INCLUDE_DIR:PATH="$(cygpath -m "$APR_EXPAT_DIR")" \
-         -DEXPAT_LIBRARY:FILEPATH="$(cygpath -m "$APR_EXPAT_DIR/libexpatMT.lib")" \
+         -DEXPAT_INCLUDE_DIR="$(cygpath -m "$EXPAT_INCLUDE_DIRS")" \
+         -DEXPAT_LIBRARY="$(cygpath -m "$EXPAT_LIBRARIES/libexpat.lib")" \
          -DOPENSSL_ROOT_DIR:PATH="$(cygpath -m "$OPENSSL_LIBRARIES")" \
          -DCMAKE_C_FLAGS="$LL_BUILD_RELEASE" \
+         -DCMAKE_SHARED_LINKER_FLAGS="/DEBUG:FULL" \
          "$(cygpath -m "$TOP_DIR/apr-util")"
     then
         set +x
@@ -137,17 +109,14 @@ case "$AUTOBUILD_PLATFORM" in
         exit 1
     fi
     # output is APR-Util.sln
-    for proj in aprutil-1 libaprutil-1
-    do
-        build_sln "APR-Util.sln" "Release|$AUTOBUILD_WIN_VSPLATFORM" "$proj"
-    done
+    cmake --build . --config Release
     popd
     # ------------------------------------------------------------------------
 
     mkdir -p "$RELEASE_OUT_DIR" || echo "$RELEASE_OUT_DIR exists"
 
-    cp -v "$APR_RELEASE_DIR"/{apr-1.{lib,pdb},libapr-1.{lib,dll}} "$RELEASE_OUT_DIR"
-    cp -v "$APR_UTIL_RELEASE_DIR"/{aprutil-1.{lib,pdb},libaprutil-1.{lib,dll}} "$RELEASE_OUT_DIR"
+    cp -v "$APR_RELEASE_DIR"/{apr-1.lib,libapr-1.{pdb,lib,dll}} "$RELEASE_OUT_DIR"
+    cp -v "$APR_UTIL_RELEASE_DIR"/{aprutil-1.lib,libaprutil-1.{pdb,lib,dll}} "$RELEASE_OUT_DIR"
 ##  cp "apr-iconv$bitdir/LibR"/apriconv-1.{lib,pdb} "$RELEASE_OUT_DIR"
 ##  cp "apr-iconv$bitdir/Release/libapriconv-1."{lib,dll} "$RELEASE_OUT_DIR"
 
@@ -173,21 +142,22 @@ case "$AUTOBUILD_PLATFORM" in
 
     opts="-arch $AUTOBUILD_CONFIGURE_ARCH $LL_BUILD_RELEASE"
     plainopts="$(remove_cxxstd $opts)"
-    # per https://github.com/pyenv/pyenv/issues/1425
-    export SDKROOT="/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk"
-    export CC="clang"
-    export CFLAGS="$plainopts -I$SDKROOT/usr/include"
+    export CFLAGS="$plainopts"
     export CXXFLAGS="$opts"
     export LDFLAGS="$plainopts"
     export MAKEFLAGS="-j${AUTOBUILD_CPU_COUNT:-2}"
 
+    export MACOSX_DEPLOYMENT_TARGET="$LL_BUILD_DARWIN_DEPLOY_TARGET"
+
     pushd "$TOP_DIR/apr"
+    autoreconf -fvi
     ./configure --prefix="$PREFIX"
     make
     make install
     popd
 
     pushd "$TOP_DIR/apr-util"
+    autoreconf -fvi
     ./configure --prefix="$PREFIX" --with-apr="$PREFIX" --with-expat="$PREFIX"
     make
     make install
@@ -278,7 +248,7 @@ case "$AUTOBUILD_PLATFORM" in
         autoreconf -vif
         LDFLAGS="$opts" CFLAGS="$opts" CXXFLAGS="$opts" \
             ./configure --prefix="$PREFIX" --libdir="$PREFIX/lib/release"
-        make
+        make -j$AUTOBUILD_CPU_COUNT
         make install
     popd
 
@@ -289,7 +259,7 @@ case "$AUTOBUILD_PLATFORM" in
         mkdir -p "$PREFIX/iconv"
         LDFLAGS="$opts" CFLAGS="$opts" CXXFLAGS="$opts" \
             ./configure --prefix="$PREFIX/iconv" --with-apr="../apr"
-        make
+        make -j$AUTOBUILD_CPU_COUNT
         make install
 
         # move the files into place
@@ -314,7 +284,7 @@ case "$AUTOBUILD_PLATFORM" in
             --with-apr="../apr" \
             --with-apr-iconv="../apr-iconv" \
             --with-expat="$PREFIX/packages/"
-        make
+        make -j$AUTOBUILD_CPU_COUNT
         make install
 
         # move files into place
