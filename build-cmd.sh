@@ -27,8 +27,6 @@ PKG_LIB="$STAGING_DIR/packages/lib"
 PKG_INCLUDE="$STAGING_DIR/packages/include"
 EXPAT_LIBRARIES="$PKG_LIB/release"
 EXPAT_INCLUDE_DIRS="$PKG_INCLUDE/expat"
-OPENSSL_LIBRARIES="$PKG_LIB/release"
-OPENSSL_INCLUDE_DIRS="$PKG_INCLUDE/openssl"
 
 # remove_cxxstd
 source "$(dirname "$AUTOBUILD_VARIABLES_FILE")/functions"
@@ -95,7 +93,6 @@ case "$AUTOBUILD_PLATFORM" in
          -DAPR_LIBRARIES:FILEPATH="$(cygpath -m "$APR_RELEASE_DIR/libapr-1.lib")" \
          -DEXPAT_INCLUDE_DIR="$(cygpath -m "$EXPAT_INCLUDE_DIRS")" \
          -DEXPAT_LIBRARY="$(cygpath -m "$EXPAT_LIBRARIES/libexpat.lib")" \
-         -DOPENSSL_ROOT_DIR:PATH="$(cygpath -m "$OPENSSL_LIBRARIES")" \
          -DCMAKE_C_FLAGS="$LL_BUILD_RELEASE" \
          -DCMAKE_SHARED_LINKER_FLAGS="/DEBUG:FULL" \
          "$(cygpath -m "$TOP_DIR/apr-util")"
