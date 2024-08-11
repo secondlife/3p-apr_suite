@@ -56,6 +56,9 @@ case "$AUTOBUILD_PLATFORM" in
 
     load_vsvars
 
+    opts="$(replace_switch /Zi /Z7 $LL_BUILD_RELEASE)"
+    plainopts="$(remove_switch /GR $(remove_cxxstd $opts))"
+
     # have to use different CMake directories for APR build vs. APR-UTIL build
     # --------------------------------- apr ----------------------------------
     APR_BUILD_DIR="$STAGING_DIR/apr-build$AUTOBUILD_ADDRSIZE"
@@ -63,9 +66,9 @@ case "$AUTOBUILD_PLATFORM" in
     mkdir -p "$APR_BUILD_DIR"
     pushd "$APR_BUILD_DIR"
     logfile="CMakeFiles/CMakeOutput.log"
-    if ! cmake -G "Ninja Multi-Config" \
+    if ! cmake -G "Ninja Multi-Config"  -DBUILD_SHARED_LIBS=OFF \
          -DCMAKE_INSTALL_PREFIX="$(cygpath -m "$TOP_DIR/apr")" \
-         -DCMAKE_C_FLAGS="$LL_BUILD_RELEASE" \
+         -DCMAKE_C_FLAGS="$plainopts" \
          -DCMAKE_SHARED_LINKER_FLAGS="/DEBUG:FULL" \
          -DAPR_HAVE_IPV6=OFF \
          "$(cygpath -m "$TOP_DIR/apr")"
@@ -88,12 +91,12 @@ case "$AUTOBUILD_PLATFORM" in
     APR_UTIL_RELEASE_DIR="$APR_UTIL_BUILD_DIR/Release"
     mkdir -p "$APR_UTIL_BUILD_DIR"
     cd "$APR_UTIL_BUILD_DIR"
-    if ! cmake -G "Ninja Multi-Config" \
+    if ! cmake -G "Ninja Multi-Config" -DBUILD_SHARED_LIBS=OFF \
          -DCMAKE_INSTALL_PREFIX="$(cygpath -m "$TOP_DIR/apr")" \
          -DAPR_LIBRARIES:FILEPATH="$(cygpath -m "$APR_RELEASE_DIR/libapr-1.lib")" \
          -DEXPAT_INCLUDE_DIR="$(cygpath -m "$EXPAT_INCLUDE_DIRS")" \
          -DEXPAT_LIBRARY="$(cygpath -m "$EXPAT_LIBRARIES/libexpat.lib")" \
-         -DCMAKE_C_FLAGS="$LL_BUILD_RELEASE" \
+         -DCMAKE_C_FLAGS="$plainopts" \
          -DCMAKE_SHARED_LINKER_FLAGS="/DEBUG:FULL" \
          "$(cygpath -m "$TOP_DIR/apr-util")"
     then
@@ -112,8 +115,10 @@ case "$AUTOBUILD_PLATFORM" in
 
     mkdir -p "$RELEASE_OUT_DIR" || echo "$RELEASE_OUT_DIR exists"
 
-    cp -v "$APR_RELEASE_DIR"/{apr-1.lib,libapr-1.{pdb,lib,dll}} "$RELEASE_OUT_DIR"
-    cp -v "$APR_UTIL_RELEASE_DIR"/{aprutil-1.lib,libaprutil-1.{pdb,lib,dll}} "$RELEASE_OUT_DIR"
+    cp -v "$APR_RELEASE_DIR/apr-1.lib" "$RELEASE_OUT_DIR"
+    cp -v "$APR_UTIL_RELEASE_DIR/aprutil-1.lib" "$RELEASE_OUT_DIR"
+    # cp -v "$APR_RELEASE_DIR"/{apr-1.lib,libapr-1.{pdb,lib,dll}} "$RELEASE_OUT_DIR"
+    # cp -v "$APR_UTIL_RELEASE_DIR"/{aprutil-1.lib,libaprutil-1.{pdb,lib,dll}} "$RELEASE_OUT_DIR"
 ##  cp "apr-iconv$bitdir/LibR"/apriconv-1.{lib,pdb} "$RELEASE_OUT_DIR"
 ##  cp "apr-iconv$bitdir/Release/libapriconv-1."{lib,dll} "$RELEASE_OUT_DIR"
 
