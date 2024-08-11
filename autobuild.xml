@@ -28,11 +28,11 @@
             <key>archive</key>
             <map>
               <key>hash</key>
-              <string>bd61ec7787ea96d11f735afa5a6296ed175472b6</string>
+              <string>8cc4f38fd809d9ff5d8ca617d7e068eb236f4162</string>
               <key>hash_algorithm</key>
               <string>sha1</string>
               <key>url</key>
-              <string>https://github.com/secondlife/3p-expat/releases/download/v2.6.2-r4/expat-2.6.2-r4-darwin64-10278332617.tar.zst</string>
+              <string>https://github.com/secondlife/3p-expat/releases/download/v2.6.2-r5/expat-2.6.2-r5-darwin64-10337781902.tar.zst</string>
             </map>
             <key>name</key>
             <string>darwin64</string>
@@ -54,11 +54,11 @@
             <key>archive</key>
             <map>
               <key>hash</key>
-              <string>acf891bda4125a92f6347e69f0e7867f32cebd20</string>
+              <string>d7f3bbfd65fce365c3cd5be9ab72072580408dec</string>
               <key>hash_algorithm</key>
               <string>sha1</string>
               <key>url</key>
-              <string>https://github.com/secondlife/3p-expat/releases/download/v2.6.2-r4/expat-2.6.2-r4-linux64-10278332617.tar.zst</string>
+              <string>https://github.com/secondlife/3p-expat/releases/download/v2.6.2-r5/expat-2.6.2-r5-linux64-10337781902.tar.zst</string>
             </map>
             <key>name</key>
             <string>linux64</string>
@@ -82,11 +82,11 @@
             <key>archive</key>
             <map>
               <key>hash</key>
-              <string>1b9c198626fca0f30fb2770856e65767a9951683</string>
+              <string>f11d91205bb753d7389a73e629627b200219c62f</string>
               <key>hash_algorithm</key>
               <string>sha1</string>
               <key>url</key>
-              <string>https://github.com/secondlife/3p-expat/releases/download/v2.6.2-r4/expat-2.6.2-r4-windows64-10278332617.tar.zst</string>
+              <string>https://github.com/secondlife/3p-expat/releases/download/v2.6.2-r5/expat-2.6.2-r5-windows64-10337781902.tar.zst</string>
             </map>
             <key>name</key>
             <string>windows64</string>
@@ -99,85 +99,11 @@
         <key>copyright</key>
         <string>Copyright (c) 1998-2000 Thai Open Source Software Center Ltd and Clark Cooper - Copyright (c) 2001-2022 Expat maintainers.</string>
         <key>version</key>
-        <string>2.6.2-r4</string>
+        <string>2.6.2-r5</string>
         <key>name</key>
         <string>expat</string>
         <key>description</key>
         <string>Expat is an XML parser library written in C</string>
-      </map>
-      <key>openssl</key>
-      <map>
-        <key>platforms</key>
-        <map>
-          <key>darwin64</key>
-          <map>
-            <key>archive</key>
-            <map>
-              <key>hash</key>
-              <string>b286e4a10cf6b1b2710b85ff96ffc0e41fd5fde8</string>
-              <key>hash_algorithm</key>
-              <string>sha1</string>
-              <key>url</key>
-              <string>https://github.com/secondlife/3p-openssl/releases/download/v1.1.1q.de53f55/openssl-1.1.1q.de53f55-darwin64-de53f55.tar.zst</string>
-            </map>
-            <key>name</key>
-            <string>darwin64</string>
-          </map>
-          <key>linux64</key>
-          <map>
-            <key>archive</key>
-            <map>
-              <key>hash</key>
-              <string>5f6953db991ef6badb0525ecc98daf28d368e9e7</string>
-              <key>hash_algorithm</key>
-              <string>sha1</string>
-              <key>url</key>
-              <string>https://github.com/secondlife/3p-openssl/releases/download/v1.1.1q.de53f55/openssl-1.1.1q.de53f55-linux64-de53f55.tar.zst</string>
-            </map>
-            <key>name</key>
-            <string>linux64</string>
-          </map>
-          <key>windows</key>
-          <map>
-            <key>archive</key>
-            <map>
-              <key>hash</key>
-              <string>dbf2f69a7d73821dbe12288097298924e866e606</string>
-              <key>hash_algorithm</key>
-              <string>sha1</string>
-              <key>url</key>
-              <string>https://github.com/secondlife/3p-openssl/releases/download/v1.1.1q.de53f55/openssl-1.1.1q.de53f55-windows-de53f55.tar.zst</string>
-            </map>
-            <key>name</key>
-            <string>windows</string>
-          </map>
-          <key>windows64</key>
-          <map>
-            <key>archive</key>
-            <map>
-              <key>hash</key>
-              <string>8bd3dea6d81de5e469b241a1b79e61efce6ecc05</string>
-              <key>hash_algorithm</key>
-              <string>sha1</string>
-              <key>url</key>
-              <string>https://github.com/secondlife/3p-openssl/releases/download/v1.1.1q.de53f55/openssl-1.1.1q.de53f55-windows64-de53f55.tar.zst</string>
-            </map>
-            <key>name</key>
-            <string>windows64</string>
-          </map>
-        </map>
-        <key>license</key>
-        <string>openssl</string>
-        <key>license_file</key>
-        <string>LICENSES/openssl.txt</string>
-        <key>copyright</key>
-        <string>Copyright (c) 1998-2011 The OpenSSL Project.  All rights reserved; Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)</string>
-        <key>version</key>
-        <string>1.1.1q.de53f55</string>
-        <key>name</key>
-        <string>openssl</string>
-        <key>description</key>
-        <string>Secure Sockets Layer (SSL v2/v3) and Transport Layer Security (TLS v1) Library</string>
       </map>
     </map>
     <key>package_description</key>
