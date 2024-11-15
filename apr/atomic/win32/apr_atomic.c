@@ -24,11 +24,7 @@
 
 APR_DECLARE(apr_status_t) apr_atomic_init(apr_pool_t *p)
 {
-#if defined (NEED_ATOMICS_GENERIC64)
-    return apr__atomic_generic64_init(p);
-#else
     return APR_SUCCESS;
-#endif
 }
 
 APR_DECLARE(apr_uint32_t) apr_atomic_add32(volatile apr_uint32_t *mem, apr_uint32_t val)
@@ -77,7 +73,7 @@ APR_DECLARE(void *) apr_atomic_casptr(volatile void **mem, void *with, const voi
 {
 /* The casting in the body of this function diverges from FORWARD();
    expand it explicitly. */
-#if (defined(WIN32) || defined(_M_IA64) || defined(_M_AMD64)) && !defined(RC_INVOKED)
+#if (defined(_M_IA64) || defined(_M_AMD64)) && !defined(RC_INVOKED)
     return InterlockedCompareExchangePointer((void* volatile*)mem, with, (void*)cmp);
 #else
     return InterlockedCompareExchangePointer((void**)mem, with, (void*)cmp);
