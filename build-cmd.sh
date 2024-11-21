@@ -144,26 +144,51 @@ case "$AUTOBUILD_PLATFORM" in
 
     opts="-arch $AUTOBUILD_CONFIGURE_ARCH $LL_BUILD_RELEASE"
     plainopts="$(remove_cxxstd $opts)"
-    export CFLAGS="$plainopts"
-    export CXXFLAGS="$opts"
-    export LDFLAGS="$plainopts"
     export MAKEFLAGS="-j${AUTOBUILD_CPU_COUNT:-2}"
 
     export MACOSX_DEPLOYMENT_TARGET="$LL_BUILD_DARWIN_DEPLOY_TARGET"
 
-    pushd "$TOP_DIR/apr"
-    autoreconf -fvi
-    ./configure --prefix="$PREFIX"
-    make
-    make install
-    popd
+    for arch in x86_64 arm64 ; do
+        ARCH_ARGS="-arch $arch"
+        opts="${TARGET_OPTS:-$ARCH_ARGS $LL_BUILD_RELEASE}"
+        cc_opts="$(remove_cxxstd $opts)"
+        ld_opts="$ARCH_ARGS"
 
-    pushd "$TOP_DIR/apr-util"
-    autoreconf -fvi
-    ./configure --prefix="$PREFIX" --with-apr="$PREFIX" --with-expat="$PREFIX"
-    make
-    make install
-    popd
+        pushd "$TOP_DIR/apr"
+            autoreconf -fvi
+
+            mkdir -p "build_$arch"
+            pushd "build_$arch"
+                CFLAGS="$cc_opts" CXXFLAGS="$opts" LDFLAGS="$ld_opts" \
+                ../configure --prefix="$PREFIX" --disable-shared --enable-static --host=$arch-apple-darwin
+                make
+                make install
+            popd
+        popd
+
+        pushd "$TOP_DIR/apr-util"
+            autoreconf -fvi
+
+            lipo $STAGING_DIR/packages/lib/release/libexpat.a -thin $arch -output $STAGING_DIR/packages/lib/libexpat.a
+
+            mkdir -p "build_$arch"
+            pushd "build_$arch"
+                CFLAGS="$cc_opts" CXXFLAGS="$opts" LDFLAGS="$ld_opts" \
+                ../configure --prefix="$PREFIX" --with-apr="$PREFIX" --with-expat="$STAGING_DIR/packages" --disable-shared --enable-static --host=$arch-apple-darwin
+                make
+                make install
+            popd
+
+            rm $STAGING_DIR/packages/lib/libexpat.a
+        popd
+
+        mkdir -p "$PREFIX/lib/release/$arch"
+        mv "$PREFIX"/lib/*.* "$PREFIX/lib/release/$arch"
+    done
+
+    # Create universal library
+    lipo -create -output "$STAGING_DIR/lib/release/libapr-1.a" "$STAGING_DIR/lib/release/x86_64/libapr-1.a" "$STAGING_DIR/lib/release/arm64/libapr-1.a"
+    lipo -create -output "$STAGING_DIR/lib/release/libaprutil-1.a" "$STAGING_DIR/lib/release/x86_64/libaprutil-1.a" "$STAGING_DIR/lib/release/arm64/libaprutil-1.a"
 
     # To conform with autobuild install-package conventions, we want to move
     # the libraries presently in "$PREFIX/lib" to "$PREFIX/lib/release".
@@ -184,26 +209,26 @@ case "$AUTOBUILD_PLATFORM" in
     # directly, they want to manipulate only libapr[util]-1.0.dylib. Fix
     # things while relocating.
 
-    mkdir -p "$PREFIX/lib/release" || echo "reusing $PREFIX/lib/release"
-    for libname in libapr libaprutil
-    do # First just move the static library, that part is easy
-       mv "$PREFIX/lib/$libname-1.a" "$PREFIX/lib/release/"
-       # Ensure that lib/release/$libname-1.0.dylib is a real file, not a symlink
-       cp "$PREFIX/lib/$libname-1.0.dylib" "$PREFIX/lib/release"
-       # Make sure it's stamped with the -id we need in our app bundle.
-       # As of 2012-02-07, with APR 1.4.5, this function has been observed to
-       # fail on TeamCity builds. Does the failure matter? Hopefully not...
-       pushd "$PREFIX/lib/release"
-       fix_dylib_id "$libname-1.0.dylib" || \
-       echo "fix_dylib_id $libname-1.0.dylib failed, proceeding"
-       popd
-       # Recreate the $libname-1.dylib symlink, because the one in lib/ is
-       # pointing to (e.g.) libapr-1.0.4.5.dylib -- no good
-       ln -svf "$libname-1.0.dylib" "$PREFIX/lib/release/$libname-1.dylib"
-       # Clean up whatever's left in $PREFIX/lib for this $libname (e.g.
-       # libapr-1.0.4.5.dylib)
-       rm "$PREFIX/lib/$libname-"*.dylib || echo "moved all $libname-*.dylib"
-    done
+    # mkdir -p "$PREFIX/lib/release" || echo "reusing $PREFIX/lib/release"
+    # for libname in libapr libaprutil
+    # do # First just move the static library, that part is easy
+    #    mv "$PREFIX/lib/$libname-1.a" "$PREFIX/lib/release/"
+    #    # Ensure that lib/release/$libname-1.0.dylib is a real file, not a symlink
+    #    cp "$PREFIX/lib/$libname-1.0.dylib" "$PREFIX/lib/release"
+    #    # Make sure it's stamped with the -id we need in our app bundle.
+    #    # As of 2012-02-07, with APR 1.4.5, this function has been observed to
+    #    # fail on TeamCity builds. Does the failure matter? Hopefully not...
+    #    pushd "$PREFIX/lib/release"
+    #    fix_dylib_id "$libname-1.0.dylib" || \
+    #    echo "fix_dylib_id $libname-1.0.dylib failed, proceeding"
+    #    popd
+    #    # Recreate the $libname-1.dylib symlink, because the one in lib/ is
+    #    # pointing to (e.g.) libapr-1.0.4.5.dylib -- no good
+    #    ln -svf "$libname-1.0.dylib" "$PREFIX/lib/release/$libname-1.dylib"
+    #    # Clean up whatever's left in $PREFIX/lib for this $libname (e.g.
+    #    # libapr-1.0.4.5.dylib)
+    #    rm "$PREFIX/lib/$libname-"*.dylib || echo "moved all $libname-*.dylib"
+    # done
 
     # When we linked apr-util against apr (above), it grabbed the -id baked
     # into libapr-1.0.dylib as of that moment. A libaprutil-1.0.dylib built
@@ -226,14 +251,14 @@ case "$AUTOBUILD_PLATFORM" in
     # to the canonical relative Resources path. NOW: feed all those -change
     # switches into an install_name_tool command operating on that same
     # .dylib.
-    lib="$PREFIX/lib/release/libaprutil-1.0.dylib"
-    install_name_tool \
-        $(otool -L "$lib" | tail -n +3 | \
-          grep "$PREFIX/lib" | awk '{ print $1 }' | \
-          (while read f; \
-           do echo -change "$f" "@executable_path/../Resources/$(basename "$f")"; \
-           done) ) \
-        "$lib"
+    # lib="$PREFIX/lib/release/libaprutil-1.0.dylib"
+    # install_name_tool \
+    #     $(otool -L "$lib" | tail -n +3 | \
+    #       grep "$PREFIX/lib" | awk '{ print $1 }' | \
+    #       (while read f; \
+    #        do echo -change "$f" "@executable_path/../Resources/$(basename "$f")"; \
+    #        done) ) \
+    #     "$lib"
   ;;
 
 # ****************************************************************************
