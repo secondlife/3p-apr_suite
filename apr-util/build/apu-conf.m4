@@ -142,16 +142,15 @@ AC_ARG_WITH([expat],
     # Add given path to standard search paths if appropriate:
     if test "$withval" != "/usr"; then
       APR_ADDTO(LDFLAGS, [-L$withval/lib])
-      APR_ADDTO(CPPFLAGS, [-I$withval/include])
-      APR_ADDTO(APRUTIL_INCLUDES, [-I$withval/include])
+      APR_ADDTO(CPPFLAGS, [-I$withval/include/expat])
+      APR_ADDTO(APRUTIL_INCLUDES, [-I$withval/include/expat])
       APR_ADDTO(APRUTIL_LDFLAGS, [-L$withval/lib])
     fi
+
+    APU_TRY_EXPAT_LINK([Expat 1.95.x], apu_cv_expat_system,
+      [expat.h], [-lexpat])
   fi
 ])
-
-if test $apu_try_external_expat = 1; then
-  APU_SYSTEM_EXPAT
-fi
 
 APR_ADDTO(APRUTIL_EXPORT_LIBS, [$apu_expat_libs])
 APR_ADDTO(APRUTIL_LIBS, [$apu_expat_libs])

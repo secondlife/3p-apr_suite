@@ -28,11 +28,11 @@
             <key>archive</key>
             <map>
               <key>hash</key>
-              <string>8cc4f38fd809d9ff5d8ca617d7e068eb236f4162</string>
+              <string>e0ba69946f2203c03faf89c1f6d5bbc48d88d2a9</string>
               <key>hash_algorithm</key>
               <string>sha1</string>
               <key>url</key>
-              <string>https://github.com/secondlife/3p-expat/releases/download/v2.6.2-r5/expat-2.6.2-r5-darwin64-10337781902.tar.zst</string>
+              <string>https://github.com/secondlife/3p-expat/releases/download/v2.6.4-r1/expat-2.6.4-r1-darwin64-11943227858.tar.zst</string>
             </map>
             <key>name</key>
             <string>darwin64</string>
@@ -54,11 +54,11 @@
             <key>archive</key>
             <map>
               <key>hash</key>
-              <string>d7f3bbfd65fce365c3cd5be9ab72072580408dec</string>
+              <string>13483477c1f8b4bad9055fba561c64137453c3da</string>
               <key>hash_algorithm</key>
               <string>sha1</string>
               <key>url</key>
-              <string>https://github.com/secondlife/3p-expat/releases/download/v2.6.2-r5/expat-2.6.2-r5-linux64-10337781902.tar.zst</string>
+              <string>https://github.com/secondlife/3p-expat/releases/download/v2.6.4-r1/expat-2.6.4-r1-linux64-11943227858.tar.zst</string>
             </map>
             <key>name</key>
             <string>linux64</string>
@@ -82,11 +82,11 @@
             <key>archive</key>
             <map>
               <key>hash</key>
-              <string>f11d91205bb753d7389a73e629627b200219c62f</string>
+              <string>542af7d8bb8de3297c80c23a771bbcb513a630b7</string>
               <key>hash_algorithm</key>
               <string>sha1</string>
               <key>url</key>
-              <string>https://github.com/secondlife/3p-expat/releases/download/v2.6.2-r5/expat-2.6.2-r5-windows64-10337781902.tar.zst</string>
+              <string>https://github.com/secondlife/3p-expat/releases/download/v2.6.4-r1/expat-2.6.4-r1-windows64-11943227858.tar.zst</string>
             </map>
             <key>name</key>
             <string>windows64</string>
@@ -99,7 +99,7 @@
         <key>copyright</key>
         <string>Copyright (c) 1998-2000 Thai Open Source Software Center Ltd and Clark Cooper - Copyright (c) 2001-2022 Expat maintainers.</string>
         <key>version</key>
-        <string>2.6.2-r5</string>
+        <string>2.6.4-r1</string>
         <key>name</key>
         <string>expat</string>
         <key>description</key>
@@ -156,7 +156,6 @@
           <key>manifest</key>
           <array>
             <string>lib/release/*.a</string>
-            <string>lib/release/*.dylib</string>
           </array>
           <key>name</key>
           <string>darwin</string>
