@@ -149,11 +149,7 @@
 #define APR_INLINE
 #define APR_HAS_INLINE          0
 #endif /* !_MSC_VER */
-/* __has_attribute should always be a pre-defined macro, but not
- * necessarily __attribute__ (e.g. builtin), so check for both to
- * avoid overriding __attribute__.
- */
-#if !(defined(__attribute__) || defined(__has_attribute))
+#if !defined(__attribute__)
 #define __attribute__(__x)
 #endif
 #endif /* !__GNUC__ */
